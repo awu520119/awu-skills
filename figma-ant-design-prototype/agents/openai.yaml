@@ -1,0 +1,4 @@
+interface:
+  display_name: "Figma Demo → Prototype"
+  short_description: "将任意 HTML 与 PRD 一键发布到原型查看器"
+  default_prompt: "使用 $figma-ant-design-prototype 将这个 HTML 和对应 PRD 发布到自包含的原型查看器；如需首次使用就初始化项目，并给出可直接查看的预览方式。"

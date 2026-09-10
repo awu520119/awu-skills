@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>初始化状态模板</title><style>
+*{box-sizing:border-box}body{margin:0;color:#303133;background:#fff;font:14px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+main{padding:20px;overflow-wrap:anywhere}h1{font-size:22px;border-bottom:1px solid #e4e7ed;padding-bottom:8px}h2{font-size:18px}h3{font-size:16px}
+h1,h2,h3,h4,h5,h6{margin:18px 0 8px}p{margin:7px 0}code{background:#f2f3f5;padding:2px 5px;border-radius:4px}pre{background:#f6f8fa;padding:12px;overflow:auto;border-radius:6px}
+blockquote{margin:10px 0;padding:4px 12px;border-left:3px solid #1677ff;background:#f5f8ff;color:#606266}a{color:#1677ff}li{margin:3px 0}.notice{font-size:12px;color:#909399;margin-bottom:12px}
+</style></head><body><main><div class="notice">基础 Markdown 渲染模式</div><h1>初始化状态模板</h1>
+<h2>页面目的</h2>
+<p>为新建的 <code>prototype-design</code> 项目提供一个可立即查看的初始页面，帮助团队确认页面容器、左侧导航、中心内容区和右侧 PRD 展示区已经连通。</p>
+<h2>交互说明</h2>
+<ul>
+<li><code>Demo 已实现</code>：展示顶部栏、左侧导航、面包屑和初始化空态。</li>
+<li><code>原型展示</code>：页面中心提供“创建页面”和“查看使用说明”两个视觉按钮。</li>
+<li><code>Demo 已实现</code>：按钮为静态展示，不触发跳转、不写入数据。</li>
+<li><code>待确认</code>：后续页面创建流程、权限和数据来源由具体业务 PRD 约定。</li>
+</ul>
+<h2>业务规则</h2>
+<ul>
+<li><code>PRD 约定</code>：新项目首次打开时默认展示本页面。</li>
+<li><code>PRD 约定</code>：当项目已有业务页面时，应将本页面作为模板替换或移除。</li>
+<li><code>待确认</code>：是否保留初始化页面作为帮助入口。</li>
+</ul>
+<h2>异常情况</h2>
+<ul>
+<li><code>原型展示</code>：当前页面无网络请求，不包含加载失败、无权限或提交失败状态。</li>
+<li><code>待确认</code>：真实页面接入后补充空数据、接口失败和重复提交的恢复方式。</li>
+</ul>
+<h2>验收标准</h2>
+<ol>
+<li>页面可通过 <code>prototype-design</code> 查看器打开。</li>
+<li>页面入口标题为“初始化状态模板”。</li>
+<li>页面与本 PRD 使用同一发布 id：<code>initial-state</code>。</li>
+<li>页面在无额外图片、字体和第三方依赖的情况下可直接预览。</li>
+</ol></main></body></html>
