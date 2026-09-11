@@ -1,7 +1,6 @@
 import type { ThemeConfig } from 'antd';
 
 export const adminTheme: ThemeConfig = {
-  cssVar: { key: 'figma-admin-demo' },
   token: {
     colorPrimary: '#2776FF',
     colorText: '#303338',
@@ -41,18 +40,11 @@ export const adminTheme: ThemeConfig = {
       cellPaddingBlock: 13,
       cellPaddingInline: 12,
     },
-    Card: {
-      borderRadiusLG: 4,
-      paddingLG: 16,
-    },
     Pagination: {
       itemSize: 32,
     },
     Drawer: {
       paddingLG: 24,
-    },
-    Modal: {
-      borderRadiusLG: 4,
     },
   },
 };

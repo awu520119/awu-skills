@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>原型查看器</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        color: #303338;
+        background: #f2f4f7;
+        font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+      }
+      .app { height: 100%; display: flex; flex-direction: column; }
+      .topbar {
+        height: 52px;
+        flex: 0 0 52px;
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        color: #fff;
+        background: #2776ff;
+      }
+      .brand { font-size: 16px; font-weight: 600; }
+      .meta { margin-left: auto; font-size: 12px; opacity: .8; }
+      .body { min-height: 0; flex: 1; display: grid; grid-template-columns: 220px minmax(0, 1.6fr) minmax(320px, 1fr); }
+      .nav { overflow: auto; padding: 14px 10px; background: #fff; border-right: 1px solid #e9ebf0; }
+      .nav-label { padding: 4px 10px 10px; color: #8f9499; font-size: 12px; }
+      .group { margin: 4px 0; }
+      .group-title { width: 100%; padding: 8px 10px; border: 0; text-align: left; color: inherit; background: transparent; font: inherit; font-weight: 600; }
+      button.group-title { cursor: pointer; }
+      .children { padding-left: 12px; }
+      .item { width: 100%; margin: 2px 0; padding: 8px 10px; border: 0; border-radius: 4px; text-align: left; color: #696c70; background: transparent; cursor: pointer; }
+      .item:hover { background: #f5f7fa; }
+      .item.active, .group-title.active { color: #2776ff; background: #eaf2ff; font-weight: 600; }
+      .panel { min-width: 0; display: flex; flex-direction: column; background: #fff; }
+      .panel + .panel { border-left: 1px solid #e9ebf0; }
+      .panel-title { height: 42px; flex: 0 0 42px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #e9ebf0; color: #696c70; }
+      iframe { width: 100%; height: 100%; min-height: 0; border: 0; background: #fff; }
+      .empty { padding: 24px; color: #8f9499; }
+      @media (max-width: 1000px) {
+        .body { grid-template-columns: 190px minmax(0, 1fr); }
+        .docs { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div id="brand" class="brand">原型查看器</div>
+        <div class="meta">HTML + Markdown</div>
+      </header>
+      <main class="body">
+        <aside class="nav">
+          <div class="nav-label">页面目录</div>
+          <div id="nav"></div>
+        </aside>
+        <section class="panel">
+          <div id="page-title" class="panel-title">页面预览</div>
+          <iframe id="page-frame" title="页面预览"></iframe>
+        </section>
+        <section class="panel docs">
+          <div class="panel-title">说明文档</div>
+          <iframe id="doc-frame" title="说明文档"></iframe>
+          <div id="doc-empty" class="empty" hidden>该页面暂无说明文档</div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const get = (selector) => document.querySelector(selector);
+      let tree = [];
+
+      function flatten(nodes, output = []) {
+        for (const node of nodes || []) {
+          output.push(node);
+          flatten(node.children, output);
+        }
+        return output;
+      }
+
+      function renderNav(nodes, host) {
+        for (const node of nodes || []) {
+          if (node.children?.length) {
+            const group = document.createElement('div');
+            group.className = 'group';
+            const title = document.createElement(node.htmlPath ? 'button' : 'div');
+            title.className = 'group-title';
+            title.textContent = node.title;
+            if (node.htmlPath) {
+              title.dataset.id = node.id;
+              title.onclick = () => selectNode(node.id);
+            }
+            const children = document.createElement('div');
+            children.className = 'children';
+            renderNav(node.children, children);
+            group.append(title, children);
+            host.append(group);
+            continue;
+          }
+
+          const button = document.createElement('button');
+          button.className = 'item';
+          button.dataset.id = node.id;
+          button.textContent = node.title;
+          button.onclick = () => selectNode(node.id);
+          host.append(button);
+        }
+      }
+
+      function selectNode(id) {
+        const node = flatten(tree).find((item) => item.id === id && item.htmlPath);
+        if (!node) return;
+
+        document.querySelectorAll('[data-id]').forEach((item) => {
+          item.classList.toggle('active', item.dataset.id === id);
+        });
+        get('#page-title').textContent = node.title;
+        get('#page-frame').src = node.htmlPath;
+        get('#doc-frame').hidden = !node.docPath;
+        get('#doc-empty').hidden = Boolean(node.docPath);
+        get('#doc-frame').src = node.docPath || 'about:blank';
+        history.replaceState(null, '', `?node=${encodeURIComponent(id)}`);
+      }
+
+      async function boot() {
+        try {
+          const data = await fetch('nav.json').then((response) => response.json());
+          tree = data.tree || [];
+          get('#brand').textContent = data.projectName || '原型查看器';
+          renderNav(tree, get('#nav'));
+          const requested = new URLSearchParams(location.search).get('node');
+          const first = flatten(tree).find((node) => node.htmlPath);
+          selectNode(requested || first?.id);
+        } catch (error) {
+          get('#nav').innerHTML = '<div class="empty">无法读取 nav.json，请通过本地 HTTP 服务预览。</div>';
+        }
+      }
+
+      window.addEventListener('message', (event) => {
+        if (event.source === get('#page-frame').contentWindow && event.data?.type === 'gotoNode') {
+          selectNode(String(event.data.id));
+        }
+      });
+
+      boot();
+    </script>
+  </body>
+</html>

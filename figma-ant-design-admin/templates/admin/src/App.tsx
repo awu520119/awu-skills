@@ -3,8 +3,6 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   OrderedListOutlined,
-  PictureOutlined,
-  SettingOutlined,
 } from '@ant-design/icons';
 import { Avatar, Button, Layout, Menu, Space, Typography } from 'antd';
 import { useState } from 'react';
@@ -37,24 +35,14 @@ export default function App() {
           mode="inline"
           theme="dark"
           selectedKeys={[selectedKey]}
-          defaultOpenKeys={collapsed ? [] : ['scenic', 'orders']}
+          defaultOpenKeys={collapsed ? [] : ['orders']}
           items={[
-            {
-              key: 'scenic',
-              icon: <PictureOutlined />,
-              label: '景区管理',
-              children: [
-                { key: '/spots', label: '景区拍摄点' },
-                { key: '/themes', label: '主题管理' },
-              ],
-            },
             {
               key: 'orders',
               icon: <OrderedListOutlined />,
               label: '订单管理',
               children: [{ key: '/orders', label: '订单列表' }],
             },
-            { key: '/system', icon: <SettingOutlined />, label: '系统管理' },
           ]}
           onClick={({ key }) => navigate(key)}
         />

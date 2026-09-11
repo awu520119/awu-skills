@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prototype Viewer"
+  short_description: "将 HTML 页面和 Markdown 说明发布到独立原型查看器"
+  default_prompt: "使用 $prototype-viewer 将这个静态页面和说明文档发布到原型查看器。"

@@ -42,12 +42,12 @@ mkdir -p "$DEMO_DIR"
 echo "复制模板到 $DESTINATION"
 
 if command -v rsync >/dev/null 2>&1; then
-  rsync -a --exclude node_modules --exclude dist "$TEMPLATE_DIR/" "$DESTINATION/"
+  rsync -a --exclude .DS_Store --exclude node_modules --exclude dist "$TEMPLATE_DIR/" "$DESTINATION/"
 else
   mkdir -p "$DESTINATION"
   (
     cd "$TEMPLATE_DIR"
-    find . \( -type d \( -name node_modules -o -name dist \) -prune \) -o -type f -print | while IFS= read -r file; do
+    find . \( -type d \( -name node_modules -o -name dist \) -prune \) -o \( -type f ! -name .DS_Store \) -print | while IFS= read -r file; do
       target_dir="$DESTINATION/$(dirname "$file")"
       mkdir -p "$target_dir"
       cp "$file" "$DESTINATION/$file"
@@ -68,4 +68,3 @@ echo "  cd \"$DESTINATION\""
 echo "  npm run dev"
 echo "  npm run check"
 echo "  npm run build"
-

@@ -1,4 +1,4 @@
 interface:
   display_name: "Figma Ant Design 后台"
   short_description: "创建并迭代符合 Figma 规范的 React 后台 Demo"
-  default_prompt: "使用 $figma-ant-design-admin 创建一个符合形影随拍后台规范的可运行 Demo。"
+  default_prompt: "使用 $figma-ant-design-admin 创建或迭代一个符合形影随拍后台规范的可运行 Demo。"
