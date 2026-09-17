@@ -61,7 +61,7 @@
       <div class="panel center">
         <div class="iframe-wrap" :class="{ mobile: effectiveDevice === 'mobile' }">
           <div class="frame-inner">
-            <iframe v-if="currentNode && currentNode.htmlPath" :src="currentNode.htmlPath"></iframe>
+            <iframe v-if="currentNode && currentNode.htmlPath" :src="prototypeSrc" :srcdoc="prototypeSrcdoc"></iframe>
             <div v-else class="desc-empty">请在左侧选择一个页面</div>
           </div>
         </div>
@@ -85,7 +85,7 @@
         </div>
         <div class="desc-body" v-if="currentNode && currentNode.mdPath">
           <!-- @load 在 iframe 重新加载（含切换页面）后同步大纲显示状态，避免状态被重置 -->
-          <iframe :src="`desc/${currentNode.id}.html`" @load="onDescLoad"></iframe>
+          <iframe :src="descSrc" :srcdoc="descSrcdoc" @load="onDescLoad"></iframe>
         </div>
         <div v-else class="desc-empty">{{ currentNode ? '该节点没有描述文档' : '请在左侧选择一个页面' }}</div>
       </div>

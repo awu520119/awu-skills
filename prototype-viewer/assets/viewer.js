@@ -41,6 +41,8 @@
   const EXPANDED_KEY = Symbol('expanded');
   // 搜索中标记：搜索时强制展开（不改写 expanded 记忆，清空搜索后自动恢复原折叠状态）
   const SEARCHING_KEY = Symbol('searching');
+  // 单文件分享版中 React 页使用 Blob URL：既不重复内嵌应用，又让 HashRouter 获得合法基址。
+  const embeddedReactUrls = new Map();
 
   const TreeNode = {
     name: 'TreeNode',
@@ -258,6 +260,39 @@
         return null;
       };
       const currentNode = computed(() => findNode(tree, activeId.value));
+
+      // 常规查看器加载相对文件；单文件分享版会在全局注入页面/说明的 srcdoc，
+      // iframe 因此仍保留独立文档上下文，且业务页可继续通过 postMessage 与查看器联动。
+      const prototypeSrc = computed(() => {
+        const path = currentNode.value && currentNode.value.htmlPath;
+        const page = path && window.PROTOTYPE_EMBEDDED_PAGES?.[path];
+        if (!path || !page) return path || '';
+        if (page.reactHash === undefined) return '';
+        let url = embeddedReactUrls.get(path);
+        if (!url) {
+          // 单文件环境的 Blob URL 是 blob:null，HashRouter 无法使用；注入初始路由后，
+          // React 应用会自动切到 MemoryRouter。
+          const routeScript = `<script>window.__PROTOTYPE_INITIAL_ROUTE__=${JSON.stringify(page.reactHash)};<${'/script'}>`;
+          url = URL.createObjectURL(new Blob([routeScript, window.PROTOTYPE_EMBEDDED_REACT_APP_HTML], { type: 'text/html' }));
+          embeddedReactUrls.set(path, url);
+        }
+        return url;
+      });
+      const prototypeSrcdoc = computed(() => {
+        const path = currentNode.value && currentNode.value.htmlPath;
+        const page = path && window.PROTOTYPE_EMBEDDED_PAGES?.[path];
+        if (!page) return null;
+        if (page.reactHash !== undefined) return null;
+        return page.srcdoc || null;
+      });
+      const descSrc = computed(() => {
+        const id = currentNode.value && currentNode.value.id;
+        return id && !window.PROTOTYPE_EMBEDDED_DESCS?.[id] ? `desc/${id}.html` : '';
+      });
+      const descSrcdoc = computed(() => {
+        const id = currentNode.value && currentNode.value.id;
+        return (id && window.PROTOTYPE_EMBEDDED_DESCS?.[id]) || null;
+      });
 
       const onSelectNode = (node) => {
         if (!node || activeId.value === node.id) return;
@@ -503,7 +538,7 @@
       return {
         projectName, tree, lastSyncAt, activeId, leftCollapsed, centerCollapsed, rightCollapsed, expanded,
         gridCols,
-        currentNode,
+        currentNode, prototypeSrc, prototypeSrcdoc, descSrc, descSrcdoc,
         onSelectNode, allExpanded, toggleAll, startDrag, gotoNode,
         effectiveDevice,
         tocVisible, toggleToc, onDescLoad: syncDescToc,

@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, rm, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const distDir = resolve('dist');
@@ -24,4 +24,6 @@ html = html
   .replace(scriptMatch[0], () => `<script type="module">${safeJs}</script>`);
 
 await writeFile(indexPath, html, 'utf8');
-console.log('dist/index.html 已内联 JS/CSS，可通过 file:// 离线打开');
+// HTML 已经不再引用 Vite 生成的 assets；保留它们只会让分享包重复一份 JS/CSS。
+await rm(resolve(distDir, 'assets'), { recursive: true, force: true });
+console.log('dist/index.html 已内联 JS/CSS，并清理重复 assets，可通过 file:// 离线打开');

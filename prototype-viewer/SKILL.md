@@ -1,3 +1,8 @@
+---
+name: prototype-viewer
+description: 创建、维护和预览基于 React、Ant Design 与本地 Mock 数据的三栏桌面端原型查看器；适用于原型页面、目录、说明文档和离线产物的整理与校验。
+---
+
 # 形影随拍后台 · Ant Design 原型查看器
 
 ## 项目定位
@@ -35,12 +40,14 @@
 
 1. 修改 `react-app/src/` 中的页面、Mock 或主题。
 2. 执行 `cd react-app && npm run check && npm run build`。
-3. 构建脚本会把 JS/CSS 内联到 `react-app/dist/index.html`，保证 `file://` 离线打开。
-4. 执行 `python3 scripts/validate.py .` 校验查看器目录、页面和文档。
-5. 更新页面节点时，同步修改 `nav.json`、`nav.js`、`pages/` 与 `desc/`。
+3. 构建脚本会把 JS/CSS 内联到 `react-app/dist/index.html`，并清理重复的 `dist/assets/`，保证 `file://` 离线打开且不重复打包。
+4. 分享给团队时执行 `python3 scripts/export_single_file.py . --force`，生成 `share/prototype-viewer.html`；该文件内联查看器、React 原型和说明文档，可单独发送并离线双击打开。
+5. 执行 `python3 scripts/validate.py .` 校验查看器目录、页面和文档。
+6. 更新页面节点时，同步修改 `nav.json`、`nav.js`、`pages/` 与 `desc/`，再重新执行构建与导出。
 
 ## 边界
 
 - 不增加登录、权限、埋点、真实接口或移动端示例。
 - 不使用 Vue/Element Plus 编写业务示例页；Vue 只用于最外层查看器自身。
 - 不修改查看器框架文件，除非需求明确涉及目录、面板或文档查看能力。
+- 单文件导出只保证本 Skill 的 React 跳转页和自包含说明文档；自定义页面若引用额外本地资源，应先将资源内联后再导出。
