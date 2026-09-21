@@ -41,16 +41,10 @@ def collect_leaves(nodes):
     return [n for n in iter_nodes(nodes) if n.get("htmlPath")]
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="校验原型项目一致性")
-    parser.add_argument("project_dir")
-    parser.add_argument("--quiet", action="store_true")
-    args = parser.parse_args()
-
-    project = Path(args.project_dir).resolve()
+def main_for_project(project: Path, quiet: bool = False) -> int:
     failures: list[str] = []
     warnings: list[str] = []
-    log = (lambda *a: None) if args.quiet else print
+    log = (lambda *a: None) if quiet else print
 
     nav_json = project / "nav.json"
     if not nav_json.exists():
@@ -62,7 +56,7 @@ def main() -> int:
         failures.append(f"nav.json 解析失败: {e}")
         print(f"❌ {failures[-1]}")
         return 1
-    log(f"✅ nav.json 是合法 JSON")
+    log("✅ nav.json 是合法 JSON")
 
     tree = data.get("tree", [])
     all_nodes = list(iter_nodes(tree))
@@ -105,17 +99,25 @@ def main() -> int:
             if html.resolve() not in declared:
                 warnings.append(f"pages/{html.name} 未在 nav.json 中注册")
 
-    # 6. desc/ .md 与 nav 一致；每个 md 都必须有 desc/<id>.html
+    # 6. desc/ .md 与 nav 一致；每个 md 都必须有对应的 desc/<id>.html
     desc_dir = project / "desc"
-    declared_md = {(project / n["mdPath"]).resolve() for n in collect_leaves(tree) if n.get("mdPath")}
+    md_to_id = {
+        (project / n["mdPath"]).resolve(): n["id"]
+        for n in collect_leaves(tree)
+        if n.get("mdPath") and n.get("id")
+    }
     if desc_dir.exists():
         for md in desc_dir.glob("*.md"):
-            if md.resolve() not in declared_md:
+            node_id = md_to_id.get(md.resolve())
+            if node_id is None:
                 warnings.append(f"desc/{md.name} 未在 nav.json 中注册")
-        for md in desc_dir.glob("*.md"):
-            expected_html = desc_dir / (md.stem + ".html")
+                continue
+            expected_html = desc_dir / f"{node_id}.html"
             if not expected_html.exists():
-                failures.append(f"desc/{md.name} 缺少对应的 desc.html，请运行 sync_nav.py / build_desc.py")
+                failures.append(
+                    f"desc/{md.name} 缺少对应的 desc/{node_id}.html，"
+                    f"请运行 sync_project.py"
+                )
 
     # 7. 旧 desc.js 残留提示（不阻塞）
     if desc_dir.exists():
@@ -129,7 +131,7 @@ def main() -> int:
         try:
             js_data = json.loads(nav_js.read_text(encoding="utf-8").split("=", 1)[1].rstrip(";\n "))
             if js_data.get("lastSyncAt") != data.get("lastSyncAt") or js_data.get("tree") != tree:
-                warnings.append("nav.js 与 nav.json 不同步，建议运行 sync_nav.py")
+                warnings.append("nav.js 与 nav.json 不同步，建议运行 sync_project.py")
         except Exception as e:  # noqa: BLE001
             warnings.append(f"nav.js 解析失败: {e}")
 
@@ -142,7 +144,6 @@ def main() -> int:
         if 'marked.min.js' in text:
             warnings.append("index.html 仍引用 marked.min.js，建议运行 init_project.py 刷新查看器")
 
-    # 汇总
     if warnings:
         log("\n⚠️ 警告：")
         for w in warnings:
@@ -156,6 +157,15 @@ def main() -> int:
 
     log("\n🎉 全部通过")
     return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="校验原型项目一致性")
+    parser.add_argument("project_dir")
+    parser.add_argument("--quiet", action="store_true")
+    args = parser.parse_args()
+
+    return main_for_project(Path(args.project_dir).resolve(), quiet=args.quiet)
 
 
 if __name__ == "__main__":

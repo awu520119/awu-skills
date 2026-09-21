@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""add_page.py / remove_page.py / rename_page.py / sync_desc.py 共享的工具。"""
+"""页面删除、重命名、同步和导出脚本共享的工具。"""
 from __future__ import annotations
 
 import json

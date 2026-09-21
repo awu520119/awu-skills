@@ -1,7 +1,7 @@
 /* viewer.css — 三栏查看器样式
  *
  * 由 index.html 引入；用 `.viewer-` 前缀与业务页 / desc 页隔离。
- * 改动请只改这一个文件，避免污染业务页 element-plus.css / vant.css 的全局样式。
+ * 改动请只改这一个文件，避免污染业务页样式。
  *
  * CSS 变量定义在 :root 而不是 .viewer scope 内：startDrag 用
  * ``document.documentElement.style.setProperty('--left-width', ...)``

@@ -4,7 +4,7 @@
  *   - 目录树（TreeNode 递归组件）+ 折叠状态管理
  *   - 三栏宽度拖拽（Pointer Events + setPointerCapture）
  *   - URL ?node=xxx 同步选中节点 + popstate 监听
- *   - 跨页跳转 gotoNode（postMessage 桥接，业务页走 viewer-bridge.js）
+ *   - 跨页跳转 gotoNode（postMessage 桥接）
  *   - 大纲显示状态（tocVisible）：viewer 端 source of truth，写 localStorage 持久化
  *   - 移动端 phone frame 自适应缩放（<meta name="device"> 上报）
  *
@@ -211,7 +211,7 @@
       });
 
       // ===== 设备缓存（自动识别）=====
-      // 业务页 <meta name="device"> 通过 viewer-bridge.js postMessage 上报，写入 deviceCache[htmlPath]。
+      // 业务页 <meta name="device"> 可通过 postMessage 上报，写入 deviceCache[htmlPath]。
       // 切换节点时优先查 cache；未命中走 pc 等待 postMessage。第二次访问同节点直接命中缓存，无闪烁。
       const deviceCache = reactive({});
       const effectiveDevice = computed(() => {
@@ -411,7 +411,7 @@
         if (data.type === 'gotoNode' && typeof data.id === 'string') {
           gotoNode(data.id);
         } else if (data.type === 'page-device') {
-          // 业务页 viewer-bridge.js 上报 <meta name="device">。
+          // 业务页上报 <meta name="device">。
           // 只接受「当前中栏 iframe」的上报：若用户在慢加载的页面 onload 前已切到
           // 其它节点，旧页面迟到的上报会被忽略，避免 device 写进新节点的缓存。
           const node = currentNode.value;
