@@ -1,4 +1,4 @@
-import { SearchOutlined } from '@ant-design/icons';
+import { ReloadOutlined } from '@ant-design/icons';
 import {
   App,
   Button,
@@ -100,7 +100,7 @@ export default function OrderListPage() {
 
   return (
     <section className="page-card">
-      <Form<QueryValues> className="query-form" form={form} layout="inline" onFinish={setQuery}>
+      <Form<QueryValues> className="query-form" form={form} layout="inline" onValuesChange={(_, values) => setQuery(values)}>
         <Form.Item name="keyword">
           <Input allowClear placeholder="订单号或手机号" />
         </Form.Item>
@@ -111,8 +111,7 @@ export default function OrderListPage() {
             options={Object.keys(statusColors).map((value) => ({ value, label: value }))}
           />
         </Form.Item>
-        <Form.Item><Button type="primary" htmlType="submit" icon={<SearchOutlined />}>查询</Button></Form.Item>
-        <Form.Item><Button type="link" onClick={resetQuery}>重置</Button></Form.Item>
+        <Form.Item><Button type="link" icon={<ReloadOutlined />} onClick={resetQuery}>重置</Button></Form.Item>
       </Form>
 
       <Table<Order>

@@ -9,7 +9,7 @@ description: 使用 React、Ant Design 和 Mock 数据创建或迭代“形影�
 
 ## 资源
 
-- 实现视觉和交互前，按需读取 [后台规范](references/admin-demo.md)。
+- 实现视觉和交互前，读取 [后台规范](references/admin-demo.md)；列表页必须遵循其中的筛选和固定列约定。
 - 新建独立 Demo 时使用 `templates/admin/` 和 `scripts/init-demo.sh`。
 - Demo 默认位于 `<项目根>/admin-demo-code/<project-name>/`；可用 `FIGMA_ADMIN_ROOT` 指定项目根。
 
@@ -23,7 +23,7 @@ description: 使用 React、Ant Design 和 Mock 数据创建或迭代“形影�
    ```
 
    项目名使用 kebab-case；仅复制模板时追加 `--no-install`。
-3. 有截图、Figma CSS 或组件状态图时，先提取信息层级、容器尺寸和交互状态，再实现页面。使用真实 Ant Design 组件，不照搬画布绝对坐标。
+3. 有截图、Figma CSS 或组件状态图时，先提取信息层级、容器尺寸和交互状态，再实现页面。使用真实 Ant Design 组件，不照搬画布绝对坐标。没有明确设计稿覆盖时，按规范的列表筛选与表格细节实现，不沿用 Ant Design 示例中常见的“查询”按钮式筛选。
 4. 只实现演示闭环需要的页面、状态和交互。完成后运行 `npm run check` 与 `npm run build`；需要视觉核对时按设计稿视口截图比对。
 5. 迭代已有 Demo 后，简要更新其 `AGENTS.md` 当前进度。
 

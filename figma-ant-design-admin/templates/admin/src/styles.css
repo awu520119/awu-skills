@@ -146,6 +146,11 @@ body,
   padding-inline: 0;
 }
 
+/* Keep the fixed action column visibly separated while the table scrolls. */
+.page-card .ant-table-cell-fix-right-first::after {
+  box-shadow: inset -10px 0 8px -8px rgba(0, 0, 0, 0.12);
+}
+
 .design-drawer .ant-drawer-header {
   min-height: 56px;
   padding: 16px 24px;
