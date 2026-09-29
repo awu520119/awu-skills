@@ -11,11 +11,11 @@ description: 创建、维护和预览基于 React、Ant Design 与本地 Mock �
 
 - 离线入口：`index.html`
 - 目录数据：`nav.json`，离线产物为 `nav.js`
-- React 应用：`react-app/`
+- React 示例（可选）：`react-app/`
 - 查看器入口页：`pages/*.html`
 - 页面说明：`desc/*.md` 与 `desc/*.html`
 
-页面可按两种来源维护：独立静态页仍采用“文件即页面”；配套 React 原型发布的 PRD 页面由原型项目自动生成并同步，查看器不再成为这些页面的人工维护源。
+页面可混合维护：手动页面保留在 `pages/`、`desc/` 与 `nav.manual.json`；配套 React 原型发布内容写入 `.published/<source-id>/`。`nav.json`、`nav.js` 和 `desc/<node-id>.html` 均由同步脚本生成，不手动修改。
 
 ## PC 页面规范
 
@@ -40,20 +40,20 @@ description: 创建、维护和预览基于 React、Ant Design 与本地 Mock �
 
 ## 与原型项目打通
 
-当查看器有明确配套的 React 原型项目时，以原型项目的页面清单为唯一配置源。清单应同时定义 PRD 文件、Hash 路由、展示模式（`screen` / `drawer`）和查看器目录元数据。
+当查看器有明确配套的 React 原型项目时，原型项目页面清单是该发布源的唯一配置源。查看器仍可同时保有手动目录；两类内容由同步脚本合并，ID 或内容路径冲突必须失败，不能覆盖。
 
 - `screen`：查看器加载无业务侧栏的完整页面；
 - `drawer`：查看器加载专用 `/demo/export/*` 路由导出的真实右抽屉，Drawer 默认打开且背景遮罩可见；不得在查看器侧注入 CSS 改造页面状态；
-- 原型项目提供单一发布命令，完成构建、PRD HTML 导出、`pages/` / `desc/` 同步、`nav.json` / `nav.js` / `desc/*.html` 生成与校验；
-- 页面重命名或删除时，只允许发布脚本根据自身上次的发布记录清理已管理的旧文件，不能删除独立页面或查看器框架资源。
+- 原型项目提供单一发布命令，将自包含页面、PRD 和目录片段写入 `.published/<source-id>/`，再调用查看器同步和校验；
+- 页面重命名或删除时，只允许发布脚本根据自身上次的发布记录清理该发布源目录与其说明 HTML，不能删除手动页面或查看器框架资源。
 
-发布后的 `pages/`、`desc/`、目录数据属于构建产物，不手动修改；需要改页面、PRD、分组或排序时回到原型项目页面清单。
+手动页面继续在 `pages/`、`desc/` 与 `nav.manual.json` 中维护；发布内容仅在原型项目中维护。`nav.json`、`nav.js` 与节点说明 HTML属于构建产物，不手动修改。
 
 ## 开发流程
 
-1. 若页面由配套原型项目管理，在原型项目执行其发布命令；不要手动复制 HTML 或 Markdown。
-2. 仅独立静态页面直接放入 `pages/`，对应说明放入 `desc/`，再执行 `python3 scripts/sync_project.py .`。
-3. 执行 `cd react-app && npm run check && npm run build`。
+1. 新建查看器时运行 `bash <skill目录>/scripts/init-viewer.sh <destination>`。手动页面直接放入 `pages/`，对应说明放入 `desc/`，在 `nav.manual.json` 登记后执行 `python3 scripts/sync_project.py .`。
+2. 配套原型页面在原型项目执行其发布命令；不要手动复制其 HTML 或 Markdown。
+3. 执行 `python3 scripts/validate.py .`；查看器自带 React 示例时，再执行 `cd react-app && npm run check && npm run build`。
 4. 构建脚本会把 JS/CSS 内联到 `react-app/dist/index.html`，并清理重复的 `dist/assets/`，保证 `file://` 离线打开且不重复打包。
 5. 分享给团队时执行 `python3 scripts/export_single_file.py . --force`，生成 `share/prototype-viewer.html`；该文件内联查看器、React 原型和说明文档，可单独发送并离线双击打开。
 6. 需要发送精简项目目录时执行 `python3 scripts/export_release.py .`。

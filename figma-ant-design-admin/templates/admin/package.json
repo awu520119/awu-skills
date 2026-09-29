@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "check": "tsc --noEmit",
-    "build": "tsc --noEmit && vite build"
+    "build": "tsc --noEmit && vite build",
+    "share": "npm run build && node scripts/inline-share.mjs",
+    "review:all": "npm run build && node scripts/inline-share.mjs --review=all",
+    "publish:viewer": "npm run check && npm run build && node scripts/publish-to-viewer.mjs"
   },
   "dependencies": {
     "@ant-design/icons": "^6.3.4",

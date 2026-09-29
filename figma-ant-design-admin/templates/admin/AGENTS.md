@@ -5,8 +5,10 @@ React + TypeScript + Vite + Ant Design；使用 Hash 路由和本地 Mock，可�
 - 开发前读取实际路由、`src/pages/`、`src/mock/` 和 `src/theme.ts`，以代码现状为准。
 - 页面放在 `src/pages/`，Mock 放在 `src/mock/`，稳定设计值放在 `src/theme.ts`。
 - 不连接真实后端，不增加演示无关的依赖和功能。
-- 完成后运行 `npm run check` 和 `npm run build`，并更新下方进度。
+- 完成后运行 `npm run check` 和 `npm run build`，需要离线分享时运行 `npm run share`，需要逐页评审时运行 `npm run review:all`，并更新下方进度。
+- 配套查看器发布以 `prototype-pages.json` 为唯一清单：页面、PRD、Hash 路由和目录信息只在此维护；执行 `npm run publish:viewer` 将内容发布到目标查看器的受控 `.published/` 目录。
 
 ## 当前进度
 
 - 已提供订单查询、列表、详情抽屉和取消确认示例。
+- 已提供完整项目单页与独立评审页导出脚本；新增评审场景时在 `scripts/inline-share.mjs` 的 `reviewPages` 中登记目标 Hash 和输出文件名。

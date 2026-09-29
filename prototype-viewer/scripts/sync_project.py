@@ -1,112 +1,133 @@
 #!/usr/bin/env python3
-"""一键同步原型项目。
+"""合并手动目录与外部发布片段，生成查看器最终产物。
 
-最简单的日常流程：
-    1. 放入 pages/<name>.html 和 desc/<name>.md
-    2. python3 scripts/sync_project.py .
-
-已有页面按 nav.json 保持原目录；发现同名的新 HTML/MD 时，自动登记为顶层页面。
-新页面默认登记到顶层；需要放入指定业务分组时，直接编辑 nav.json 的分组节点即可。
+手动内容维护在 ``nav.manual.json``、``pages/`` 和 ``desc/``；外部项目只可
+写入 ``.published/<source-id>/``。本脚本是唯一生成 ``nav.json`` / ``nav.js``
+及说明 HTML 的入口。
 """
 from __future__ import annotations
 
 import argparse
-import re
+import json
 import sys
 from datetime import datetime
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
-
-import page_ops  # type: ignore  # noqa: E402
-import sync_nav  # type: ignore  # noqa: E402
-import validate  # type: ignore  # noqa: E402
+import build_desc  # type: ignore  # noqa: E402
 
 
-def title_from_markdown(md: Path) -> str:
-    """优先读取 Markdown 的第一个一级标题，否则使用文件名。"""
+def fail(message: str) -> None:
+    raise ValueError(message)
+
+
+def read_json(path: Path) -> dict:
     try:
-        for line in md.read_text(encoding="utf-8").splitlines():
-            match = re.match(r"^#\s+(.+?)\s*$", line)
-            if match:
-                return match.group(1).strip()
-    except UnicodeDecodeError:
-        pass
-    return md.stem
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        fail(f"找不到 {path}")
+    except json.JSONDecodeError as error:
+        fail(f"{path} 不是合法 JSON：{error}")
+    if not isinstance(value, dict):
+        fail(f"{path} 必须是 JSON 对象")
+    return value
 
 
-def discover_new_pages(project: Path, data: dict) -> list[dict]:
-    pages_dir = project / "pages"
-    desc_dir = project / "desc"
-    if not pages_dir.exists() or not desc_dir.exists():
-        return []
+def iter_nodes(nodes: list[dict]):
+    for node in nodes:
+        yield node
+        children = node.get("children", [])
+        if not isinstance(children, list):
+            fail(f"节点 {node.get('id')} 的 children 必须是数组")
+        yield from iter_nodes(children)
 
-    declared = {
-        n.get("htmlPath")
-        for n in page_ops.iter_leaf_nodes(data.get("tree", []))
-        if n.get("htmlPath")
+
+def validate_tree(tree: list[dict], source: str, ids: set[str], paths: set[str]) -> None:
+    for node in iter_nodes(tree):
+        node_id = node.get("id")
+        if not isinstance(node_id, str) or not node_id:
+            fail(f"{source} 包含缺少 id 的节点")
+        if node_id in ids:
+            fail(f"节点 id 冲突：{node_id}（来源：{source}）")
+        ids.add(node_id)
+        for key in ("htmlPath", "mdPath"):
+            value = node.get(key)
+            if value is None:
+                continue
+            if not isinstance(value, str) or not value or value.startswith("/") or ".." in Path(value).parts:
+                fail(f"节点 {node_id} 的 {key} 非法")
+            if value in paths:
+                fail(f"内容路径冲突：{value}（来源：{source}）")
+            paths.add(value)
+
+
+def sort_tree(tree: list[dict]) -> None:
+    for node in tree:
+        if node.get("children"):
+            sort_tree(node["children"])
+    tree.sort(key=lambda node: (node.get("order", 999), node.get("title", "")))
+
+
+def sync(project: Path, verbose: bool = False) -> None:
+    marker = project / ".prototype-viewer.json"
+    if not marker.exists():
+        fail(f"{project} 不是受控原型查看器（缺少 {marker.name}）")
+
+    manual_path = project / "nav.manual.json"
+    # 兼容旧查看器：首次同步前以已有 nav.json 作为手动目录。
+    manual = read_json(manual_path if manual_path.exists() else project / "nav.json")
+    tree = manual.get("tree", [])
+    if not isinstance(tree, list):
+        fail("nav.manual.json 的 tree 必须是数组")
+
+    ids: set[str] = set()
+    paths: set[str] = set()
+    validate_tree(tree, "手动目录", ids, paths)
+    combined = list(tree)
+    published = project / ".published"
+    if published.exists():
+        for source_dir in sorted(path for path in published.iterdir() if path.is_dir() and not path.name.startswith(".")):
+            fragment_path = source_dir / "nav.fragment.json"
+            if not fragment_path.exists():
+                continue
+            fragment = read_json(fragment_path)
+            fragment_tree = fragment.get("tree", [])
+            if not isinstance(fragment_tree, list):
+                fail(f"{fragment_path} 的 tree 必须是数组")
+            validate_tree(fragment_tree, f"发布源 {source_dir.name}", ids, paths)
+            combined.extend(fragment_tree)
+
+    sort_tree(combined)
+    data = {
+        "projectName": manual.get("projectName", "原型查看器"),
+        "lastSyncAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "tree": combined,
     }
-    known_ids = {
-        n.get("id")
-        for n in page_ops.iter_nodes(data.get("tree", []))
-        if n.get("id")
-    }
-    orders = [
-        n.get("order", 0)
-        for n in page_ops.iter_nodes(data.get("tree", []))
-        if isinstance(n.get("order", 0), int)
-    ]
-    next_order = max(orders, default=0) + 1
-    discovered: list[dict] = []
-
-    for html in sorted(pages_dir.glob("*.html")):
-        md = desc_dir / f"{html.stem}.md"
-        if not md.exists() or f"pages/{html.name}" in declared:
-            continue
-
-        node_id = html.stem
-        if node_id in known_ids:
-            node_id = f"{node_id}-{next_order}"
-        node = {
-            "id": node_id,
-            "title": title_from_markdown(md),
-            "htmlPath": f"pages/{html.name}",
-            "mdPath": f"desc/{md.name}",
-            "templateType": "custom",
-            "order": next_order,
-            "children": [],
-        }
-        data.setdefault("tree", []).append(node)
-        known_ids.add(node_id)
-        declared.add(f"pages/{html.name}")
-        discovered.append(node)
-        next_order += 1
-
-    return discovered
+    (project / "nav.json").write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    (project / "nav.js").write_text(
+        "// 由 sync_project.py 自动生成；不要手改。\nwindow.NAV_DATA = "
+        + json.dumps(data, ensure_ascii=False, indent=2) + ";\n",
+        encoding="utf-8",
+    )
+    # 说明 HTML 统一放在 desc/<节点 id>.html；不清理手动文件，发布器只清理自己记录的产物。
+    build_desc.build_all(project, clean=False, quiet=not verbose)
+    if verbose:
+        print(f"✅ 已合并 {len(combined)} 个顶级目录节点")
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="扫描页面、同步目录和说明并执行校验")
-    parser.add_argument("project_dir", nargs="?", default=".")
+    parser = argparse.ArgumentParser(description="同步手动内容与外部发布内容")
+    parser.add_argument("project_dir")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
-
-    project = Path(args.project_dir).resolve()
-    data = page_ops.load_nav(project)
-    discovered = discover_new_pages(project, data)
-    if discovered:
-        page_ops.save_nav(project, data)
-        for node in discovered:
-            print(f"➕ 自动登记：{node['id']}（{node['title']}）")
-    else:
-        print("ℹ️ 没有发现新的同名 HTML/MD 页面")
-
-    result = sync_nav.sync_nav(project, verbose=args.verbose)
-    if result != 0:
-        return result
-    return validate.main_for_project(project, quiet=not args.verbose)
+    try:
+        sync(Path(args.project_dir).resolve(), args.verbose)
+    except ValueError as error:
+        print(f"❌ 同步失败：{error}", file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.exit(main())

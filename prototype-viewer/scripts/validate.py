@@ -41,10 +41,16 @@ def collect_leaves(nodes):
     return [n for n in iter_nodes(nodes) if n.get("htmlPath")]
 
 
-def main_for_project(project: Path, quiet: bool = False) -> int:
+def main() -> int:
+    parser = argparse.ArgumentParser(description="校验原型项目一致性")
+    parser.add_argument("project_dir")
+    parser.add_argument("--quiet", action="store_true")
+    args = parser.parse_args()
+
+    project = Path(args.project_dir).resolve()
     failures: list[str] = []
     warnings: list[str] = []
-    log = (lambda *a: None) if quiet else print
+    log = (lambda *a: None) if args.quiet else print
 
     nav_json = project / "nav.json"
     if not nav_json.exists():
@@ -56,7 +62,7 @@ def main_for_project(project: Path, quiet: bool = False) -> int:
         failures.append(f"nav.json 解析失败: {e}")
         print(f"❌ {failures[-1]}")
         return 1
-    log("✅ nav.json 是合法 JSON")
+    log(f"✅ nav.json 是合法 JSON")
 
     tree = data.get("tree", [])
     all_nodes = list(iter_nodes(tree))
@@ -91,7 +97,7 @@ def main_for_project(project: Path, quiet: bool = False) -> int:
         if not n.get("htmlPath") and not n.get("children"):
             failures.append(f"节点 {n['id']} 既无 htmlPath 又无 children，是孤立节点")
 
-    # 5. pages/ 与 nav 一致：每个 html 必须有 nav 引用
+    # 5. 手动 pages/ 与 nav 一致：发布内容放在 .published/，不纳入此检查
     pages_dir = project / "pages"
     declared = {(project / n["htmlPath"]).resolve() for n in collect_leaves(tree) if n.get("htmlPath")}
     if pages_dir.exists():
@@ -99,25 +105,16 @@ def main_for_project(project: Path, quiet: bool = False) -> int:
             if html.resolve() not in declared:
                 warnings.append(f"pages/{html.name} 未在 nav.json 中注册")
 
-    # 6. desc/ .md 与 nav 一致；每个 md 都必须有对应的 desc/<id>.html
+    # 6. 手动 desc/ .md 与 nav 一致；所有叶子节点都必须有生成说明 HTML
     desc_dir = project / "desc"
-    md_to_id = {
-        (project / n["mdPath"]).resolve(): n["id"]
-        for n in collect_leaves(tree)
-        if n.get("mdPath") and n.get("id")
-    }
+    declared_md = {(project / n["mdPath"]).resolve() for n in collect_leaves(tree) if n.get("mdPath")}
     if desc_dir.exists():
         for md in desc_dir.glob("*.md"):
-            node_id = md_to_id.get(md.resolve())
-            if node_id is None:
+            if md.resolve() not in declared_md:
                 warnings.append(f"desc/{md.name} 未在 nav.json 中注册")
-                continue
-            expected_html = desc_dir / f"{node_id}.html"
-            if not expected_html.exists():
-                failures.append(
-                    f"desc/{md.name} 缺少对应的 desc/{node_id}.html，"
-                    f"请运行 sync_project.py"
-                )
+    for node in collect_leaves(tree):
+        if node.get("mdPath") and not (desc_dir / f"{node['id']}.html").exists():
+            failures.append(f"节点 {node['id']} 缺少生成说明 desc/{node['id']}.html，请运行 sync_project.py")
 
     # 7. 旧 desc.js 残留提示（不阻塞）
     if desc_dir.exists():
@@ -131,7 +128,7 @@ def main_for_project(project: Path, quiet: bool = False) -> int:
         try:
             js_data = json.loads(nav_js.read_text(encoding="utf-8").split("=", 1)[1].rstrip(";\n "))
             if js_data.get("lastSyncAt") != data.get("lastSyncAt") or js_data.get("tree") != tree:
-                warnings.append("nav.js 与 nav.json 不同步，建议运行 sync_project.py")
+                warnings.append("nav.js 与 nav.json 不同步，建议运行 sync_nav.py")
         except Exception as e:  # noqa: BLE001
             warnings.append(f"nav.js 解析失败: {e}")
 
@@ -144,6 +141,7 @@ def main_for_project(project: Path, quiet: bool = False) -> int:
         if 'marked.min.js' in text:
             warnings.append("index.html 仍引用 marked.min.js，建议运行 init_project.py 刷新查看器")
 
+    # 汇总
     if warnings:
         log("\n⚠️ 警告：")
         for w in warnings:
@@ -157,15 +155,6 @@ def main_for_project(project: Path, quiet: bool = False) -> int:
 
     log("\n🎉 全部通过")
     return 0
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description="校验原型项目一致性")
-    parser.add_argument("project_dir")
-    parser.add_argument("--quiet", action="store_true")
-    args = parser.parse_args()
-
-    return main_for_project(Path(args.project_dir).resolve(), quiet=args.quiet)
 
 
 if __name__ == "__main__":
