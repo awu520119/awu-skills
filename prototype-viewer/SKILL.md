@@ -15,8 +15,7 @@ description: 创建、维护和预览基于 React、Ant Design 与本地 Mock �
 - 查看器入口页：`pages/*.html`
 - 页面说明：`desc/*.md` 与 `desc/*.html`
 
-页面维护采用“文件即页面”的方式：直接把同名的 HTML 和 Markdown 放入 `pages/`、
-`desc/`，再执行 `scripts/sync_project.py` 完成目录、说明页和校验同步。
+页面可按两种来源维护：独立静态页仍采用“文件即页面”；配套 React 原型发布的 PRD 页面由原型项目自动生成并同步，查看器不再成为这些页面的人工维护源。
 
 ## PC 页面规范
 
@@ -39,10 +38,21 @@ description: 创建、维护和预览基于 React、Ant Design 与本地 Mock �
 
 示例间跳转优先通过 `window.parent.postMessage({ type: 'gotoNode', id }, '*')` 联动查看器；单独打开 React 应用时回退到 Hash 路由。
 
+## 与原型项目打通
+
+当查看器有明确配套的 React 原型项目时，以原型项目的页面清单为唯一配置源。清单应同时定义 PRD 文件、Hash 路由、展示模式（`screen` / `drawer`）和查看器目录元数据。
+
+- `screen`：查看器加载无业务侧栏的完整页面；
+- `drawer`：查看器加载专用 `/demo/export/*` 路由导出的真实右抽屉，Drawer 默认打开且背景遮罩可见；不得在查看器侧注入 CSS 改造页面状态；
+- 原型项目提供单一发布命令，完成构建、PRD HTML 导出、`pages/` / `desc/` 同步、`nav.json` / `nav.js` / `desc/*.html` 生成与校验；
+- 页面重命名或删除时，只允许发布脚本根据自身上次的发布记录清理已管理的旧文件，不能删除独立页面或查看器框架资源。
+
+发布后的 `pages/`、`desc/`、目录数据属于构建产物，不手动修改；需要改页面、PRD、分组或排序时回到原型项目页面清单。
+
 ## 开发流程
 
-1. React 页面修改 `react-app/src/` 中的页面、Mock 或主题；静态页面直接放入 `pages/`，对应说明放入 `desc/`。
-2. 执行 `python3 scripts/sync_project.py .`，自动同步 `nav.json`、`nav.js` 和 `desc/*.html` 并校验页面。
+1. 若页面由配套原型项目管理，在原型项目执行其发布命令；不要手动复制 HTML 或 Markdown。
+2. 仅独立静态页面直接放入 `pages/`，对应说明放入 `desc/`，再执行 `python3 scripts/sync_project.py .`。
 3. 执行 `cd react-app && npm run check && npm run build`。
 4. 构建脚本会把 JS/CSS 内联到 `react-app/dist/index.html`，并清理重复的 `dist/assets/`，保证 `file://` 离线打开且不重复打包。
 5. 分享给团队时执行 `python3 scripts/export_single_file.py . --force`，生成 `share/prototype-viewer.html`；该文件内联查看器、React 原型和说明文档，可单独发送并离线双击打开。
