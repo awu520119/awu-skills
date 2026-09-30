@@ -1,7 +1,7 @@
 // 将页面、PRD 与目录片段安全发布到配套 prototype-viewer。
 import {
-  copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync,
-  rmSync, writeFileSync,
+  closeSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, openSync,
+  readFileSync, readdirSync, renameSync, rmSync, writeFileSync,
 } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -58,8 +58,16 @@ function inlineBuild() {
   const assets = existsSync(assetDir) ? new Set(readdirSync(assetDir)) : new Set();
   const asset = (file) => readFileSync(join(assetDir, file), 'utf8');
   let html = readFileSync(index, 'utf8');
-  html = html.replace(/<link[^>]*rel="stylesheet"[^>]*href="\.\/assets\/([^"]+)"[^>]*>/g, (all, file) => assets.has(file) ? `<style>${asset(file)}</style>` : all);
-  html = html.replace(/<script[^>]*type="module"[^>]*src="\.\/assets\/([^"]+)"[^>]*>\s*<\/script>/g, (all, file) => assets.has(file) ? `<script type="module">\n${asset(file)}\n</script>` : all);
+  html = html.replace(/<link[^>]*rel="stylesheet"[^>]*href="\.\/assets\/([^"]+)"[^>]*>/g, (all, file) => {
+    if (!assets.has(file)) fail(`构建资源缺失：${file}`);
+    return `<style>${asset(file)}</style>`;
+  });
+  html = html.replace(/<script[^>]*type="module"[^>]*src="\.\/assets\/([^"]+)"[^>]*>\s*<\/script>/g, (all, file) => {
+    if (!assets.has(file)) fail(`构建资源缺失：${file}`);
+    return `<script type="module">\n${asset(file)}\n</script>`;
+  });
+  if (/<(?:script|link)\b[^>]*(?:src|href)="\.\/assets\//i.test(html)) fail('构建产物仍有未内联资源');
+  if (!html.includes('<script type="module">')) fail('构建产物缺少已内联的入口脚本');
   return html;
 }
 
@@ -72,12 +80,12 @@ function pageHtml(html, page) {
 }
 
 function fragment(config) {
-  const groups = config.groups.map((group) => ({ ...group, children: [] }));
-  const byId = new Map(groups.map((group) => [group.id, group]));
+  const groups = config.groups.map((group) => ({ ...group, id: `${config.sourceId}--${group.id}`, children: [] }));
+  const byId = new Map(config.groups.map((group, index) => [group.id, groups[index]]));
   for (const page of config.pages) {
     const id = `${config.sourceId}--${page.id}`;
     byId.get(page.parent).children.push({
-      id, title: page.title, order: page.order, templateType: page.mode,
+      id, title: page.title, order: page.order, templateType: page.mode, routeHash: page.hash,
       htmlPath: `.published/${config.sourceId}/pages/${page.id}.html`,
       mdPath: `.published/${config.sourceId}/desc/${page.doc}`,
       children: [],
@@ -93,6 +101,35 @@ function leafIds(fragmentData) {
   return ids;
 }
 
+function snapshotGenerated(viewer) {
+  const files = new Map();
+  for (const name of ['nav.json', 'nav.js']) {
+    const path = join(viewer, name);
+    if (existsSync(path)) files.set(name, readFileSync(path));
+  }
+  const desc = join(viewer, 'desc');
+  const descriptions = new Map();
+  if (existsSync(desc)) {
+    for (const name of readdirSync(desc).filter((name) => name.endsWith('.html'))) {
+      descriptions.set(name, readFileSync(join(desc, name)));
+    }
+  }
+  return { files, descriptions };
+}
+
+function restoreGenerated(viewer, sourceId, snapshot) {
+  for (const name of ['nav.json', 'nav.js']) {
+    const path = join(viewer, name);
+    if (snapshot.files.has(name)) writeFileSync(path, snapshot.files.get(name));
+    else if (existsSync(path)) rmSync(path);
+  }
+  const desc = join(viewer, 'desc');
+  for (const name of readdirSync(desc).filter((name) => name.endsWith('.html'))) {
+    if (name.startsWith(`${sourceId}--`) && !snapshot.descriptions.has(name)) rmSync(join(desc, name));
+  }
+  for (const [name, content] of snapshot.descriptions) writeFileSync(join(desc, name), content);
+}
+
 function main() {
   const config = readConfig();
   const viewer = resolve(root, config.viewer.projectPath);
@@ -100,37 +137,65 @@ function main() {
   const publishedRoot = join(viewer, '.published');
   const target = join(publishedRoot, config.sourceId);
   if (!inside(publishedRoot, target)) fail('发布目标路径异常');
-  const html = inlineBuild();
-  const stage = join(publishedRoot, `.${config.sourceId}-stage-${process.pid}`);
-  const backup = join(publishedRoot, `.${config.sourceId}-backup-${process.pid}`);
-  const previous = existsSync(join(target, 'nav.fragment.json')) ? JSON.parse(readFileSync(join(target, 'nav.fragment.json'), 'utf8')) : null;
-  mkdirSync(join(stage, 'pages'), { recursive: true });
-  mkdirSync(join(stage, 'desc'), { recursive: true });
   for (const page of config.pages) {
-    const doc = join(root, 'docs', page.doc);
-    if (!existsSync(doc)) fail(`找不到 PRD：docs/${page.doc}`);
-    writeFileSync(join(stage, 'pages', `${page.id}.html`), pageHtml(html, page), 'utf8');
-    copyFileSync(doc, join(stage, 'desc', page.doc));
+    if (!existsSync(join(root, 'docs', page.doc))) fail(`找不到 PRD：docs/${page.doc}`);
   }
-  writeFileSync(join(stage, 'nav.fragment.json'), `${JSON.stringify(fragment(config), null, 2)}\n`, 'utf8');
-  if (existsSync(target)) renameSync(target, backup);
-  renameSync(stage, target);
+  const html = inlineBuild();
+  mkdirSync(publishedRoot, { recursive: true });
+  const lockPath = join(publishedRoot, '.publish-lock');
+  let lock;
+  try { lock = openSync(lockPath, 'wx'); } catch (error) {
+    if (error.code === 'EEXIST') fail(`查看器已有发布任务；若确认没有任务运行，再检查 ${lockPath}`);
+    fail(`无法创建发布锁：${error.message}`);
+  }
+  closeSync(lock);
+  let stage;
+  const backup = join(publishedRoot, `.${config.sourceId}-backup-${process.pid}`);
+  let movedOriginal = false;
+  let movedStage = false;
+  let published = false;
+  let snapshotGeneratedBefore;
   try {
+    stage = mkdtempSync(join(publishedRoot, `.${config.sourceId}-stage-`));
+    if (existsSync(backup)) fail(`备份目录已存在，请先检查：${backup}`);
+    const previous = existsSync(join(target, 'nav.fragment.json')) ? JSON.parse(readFileSync(join(target, 'nav.fragment.json'), 'utf8')) : null;
+    snapshotGeneratedBefore = snapshotGenerated(viewer);
+    mkdirSync(join(stage, 'pages'));
+    mkdirSync(join(stage, 'desc'));
+    for (const page of config.pages) {
+      writeFileSync(join(stage, 'pages', `${page.id}.html`), pageHtml(html, page), 'utf8');
+      copyFileSync(join(root, 'docs', page.doc), join(stage, 'desc', page.doc));
+    }
+    writeFileSync(join(stage, 'nav.fragment.json'), `${JSON.stringify(fragment(config), null, 2)}\n`, 'utf8');
+    run('python3', ['scripts/smoke_published.py', stage], viewer);
+    if (existsSync(target)) { renameSync(target, backup); movedOriginal = true; }
+    renameSync(stage, target);
+    movedStage = true;
     run('python3', ['scripts/sync_project.py', '.', '--verbose'], viewer);
-    run('python3', ['scripts/validate.py', '.', '--quiet'], viewer);
-    if (existsSync(backup)) rmSync(backup, { recursive: true, force: true });
+    const current = new Set(leafIds(fragment(config)));
+    for (const id of leafIds(previous)) {
+      if (!id.startsWith(`${config.sourceId}--`) || !safeId.test(id.slice(config.sourceId.length + 2))) {
+        fail(`上次发布记录包含非法节点 id：${id}`);
+      }
+      if (!current.has(id)) rmSync(join(viewer, 'desc', `${id}.html`), { force: true });
+    }
+    published = true;
   } catch (error) {
-    rmSync(target, { recursive: true, force: true });
-    if (existsSync(backup)) renameSync(backup, target);
-    // 恢复查看器目录数据；失败时保留原错误供调用者处理。
-    try { run('python3', ['scripts/sync_project.py', '.'], viewer); } catch { /* noop */ }
+    if (movedOriginal || movedStage) {
+      try {
+        if (movedStage) rmSync(target, { recursive: true });
+        if (movedOriginal) renameSync(backup, target);
+        restoreGenerated(viewer, config.sourceId, snapshotGeneratedBefore);
+      } catch (rollbackError) {
+        fail(`${error.message}；自动恢复失败：${rollbackError.message}。原发布备份保留在 ${backup}`);
+      }
+    }
     throw error;
+  } finally {
+    if (stage && existsSync(stage)) rmSync(stage, { recursive: true, force: true });
+    rmSync(lockPath, { force: true });
   }
-  // 只清理由本发布源不再声明的说明 HTML。
-  const current = new Set(leafIds(fragment(config)));
-  for (const id of leafIds(previous)) {
-    if (!current.has(id)) rmSync(join(viewer, 'desc', `${id}.html`), { force: true });
-  }
+  if (published && existsSync(backup)) rmSync(backup, { recursive: true, force: true });
   console.log(`✅ 已发布 ${config.pages.length} 个页面到 ${viewer}`);
 }
 

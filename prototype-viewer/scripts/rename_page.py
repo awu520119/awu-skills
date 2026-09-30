@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 import argparse
-import shutil
+import re
 import sys
 from pathlib import Path
 
@@ -21,7 +21,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
-from page_ops import find_node, load_nav, save_nav  # type: ignore
+from page_ops import find_node, load_manual_nav, load_nav, manual_file, save_manual_nav  # type: ignore
 from sync_nav import sync_nav  # type: ignore
 
 
@@ -61,15 +61,22 @@ def main() -> int:
     args = parser.parse_args()
 
     project = Path(args.project_dir).resolve()
-    data = load_nav(project)
+    data = load_manual_nav(project)
     node = find_node(data["tree"], args.id)
     if not node:
-        print(f"❌ 节点 {args.id} 不存在", file=sys.stderr)
+        print(f"❌ 手动目录中没有节点 {args.id}；发布页面请在原型项目修改", file=sys.stderr)
         return 1
 
     new_id = args.new_id or node["id"]
-    old_html = project / node["htmlPath"] if node.get("htmlPath") else None
-    old_md = project / node["mdPath"] if node.get("mdPath") else None
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", new_id):
+        print(f"❌ new-id 不合法：{new_id}", file=sys.stderr)
+        return 1
+    try:
+        old_html = manual_file(project, node["htmlPath"], "pages", ".html") if node.get("htmlPath") else None
+        old_md = manual_file(project, node["mdPath"], "desc", ".md") if node.get("mdPath") else None
+    except ValueError as error:
+        print(f"❌ {error}", file=sys.stderr)
+        return 1
     old_desc_html = project / "desc" / f"{node['id']}.html"
     old_desc_js = project / "desc" / f"{node['id']}.desc.js"  # 历史遗留
 
@@ -84,7 +91,7 @@ def main() -> int:
 
     # ===== 前置校验：全部通过前不修改任何文件/数据，避免失败时项目处于损坏状态 =====
     if new_id != node["id"]:
-        if find_node(data["tree"], new_id):
+        if find_node(load_nav(project)["tree"], new_id) or find_node(data["tree"], new_id):
             print(f"❌ new-id `{new_id}` 与树中已有节点冲突", file=sys.stderr)
             return 1
         # 目标文件若已存在则中止（Windows Path.rename 会抛 FileExistsError）
@@ -118,7 +125,7 @@ def main() -> int:
             # 前置已校验 new_parent 存在，理论不会走到；回滚到根兜底
             print(f"❌ 新父节点 {args.new_parent} 不存在", file=sys.stderr)
             data["tree"].append(detached)
-            save_nav(project, data)
+            save_manual_nav(project, data)
             return 1
     if args.new_title:
         node["title"] = args.new_title
@@ -141,8 +148,9 @@ def main() -> int:
             old_desc_js.rename(old_desc_js.with_name(new_id + ".desc.js"))
 
     node["id"] = new_id
-    save_nav(project, data)
-    sync_nav(project, verbose=True)
+    save_manual_nav(project, data)
+    if sync_nav(project, verbose=True) != 0:
+        return 1
     print(f"✅ 已重命名/移动 {args.id} -> {new_id}")
     return 0
 

@@ -45,6 +45,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="校验原型项目一致性")
     parser.add_argument("project_dir")
     parser.add_argument("--quiet", action="store_true")
+    parser.add_argument("--strict", action="store_true", help="将警告也视为校验失败")
     args = parser.parse_args()
 
     project = Path(args.project_dir).resolve()
@@ -151,6 +152,9 @@ def main() -> int:
         for f in failures:
             log(f"  - {f}")
         log(f"\n共 {len(failures)} 处失败")
+        return 1
+    if args.strict and warnings:
+        print(f"❌ 严格校验失败：{len(warnings)} 条警告", file=sys.stderr)
         return 1
 
     log("\n🎉 全部通过")

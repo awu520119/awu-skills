@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 # Ensure stdout can print emojis on Windows GBK terminals
@@ -29,7 +30,11 @@ from sync_project import sync  # type: ignore  # noqa: E402
 def sync_nav(project_dir: Path, verbose: bool = False, *,
              skip_existing: bool = False) -> int:
     del skip_existing
-    sync(project_dir.resolve(), verbose)
+    try:
+        sync(project_dir.resolve(), verbose)
+    except ValueError as error:
+        print(f"❌ 同步失败：{error}", file=sys.stderr)
+        return 1
     return 0
 
 

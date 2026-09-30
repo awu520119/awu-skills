@@ -91,8 +91,6 @@ echo "  cd \"$DESTINATION\""
 echo "  npm run dev"
 echo "  npm run check"
 echo "  npm run build"
-echo "  npm run share"
-echo "  npm run review:all"
 if [ -n "$VIEWER_PATH" ]; then
   echo "  npm run publish:viewer"
 fi

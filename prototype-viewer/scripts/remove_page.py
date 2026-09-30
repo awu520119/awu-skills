@@ -19,7 +19,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
-from page_ops import find_node, iter_nodes, load_nav, save_nav  # type: ignore
+from page_ops import find_node, load_manual_nav, manual_file, save_manual_nav  # type: ignore
 from sync_nav import sync_nav  # type: ignore
 
 
@@ -37,8 +37,8 @@ def remove_node(tree, node_id):
 def collect_leaf_files(project, node, out):
     """递归收集节点及其所有后代的 html/md/desc 文件（删除带子节点的分组时一并清理）。"""
     for p in (
-        project / node["htmlPath"] if node.get("htmlPath") else None,
-        project / node["mdPath"] if node.get("mdPath") else None,
+        manual_file(project, node["htmlPath"], "pages", ".html") if node.get("htmlPath") else None,
+        manual_file(project, node["mdPath"], "desc", ".md") if node.get("mdPath") else None,
         project / "desc" / f"{node['id']}.html",
         project / "desc" / f"{node['id']}.desc.js",  # 历史遗留
     ):
@@ -69,14 +69,18 @@ def main() -> int:
     args = parser.parse_args()
 
     project = Path(args.project_dir).resolve()
-    data = load_nav(project)
+    data = load_manual_nav(project)
     target = find_node(data["tree"], args.id)
     if not target:
-        print(f"❌ 节点 {args.id} 不存在", file=sys.stderr)
+        print(f"❌ 手动目录中没有节点 {args.id}；发布页面请在原型项目修改", file=sys.stderr)
         return 1
 
     files = []
-    collect_leaf_files(project, target, files)
+    try:
+        collect_leaf_files(project, target, files)
+    except ValueError as error:
+        print(f"❌ {error}", file=sys.stderr)
+        return 1
 
     if args.dry_run:
         print(f"DRY-RUN: 将删除节点（含子节点）：{target['id']}")
@@ -86,7 +90,7 @@ def main() -> int:
             prune_empty_groups(data["tree"], dry_run=True)
         return 0
 
-    removed = remove_node(data["tree"], args.id)
+    remove_node(data["tree"], args.id)
     for f in files:
         f.unlink()
         print(f"  - 删除 {f.relative_to(project)}")
@@ -95,8 +99,9 @@ def main() -> int:
     if not args.keep_empty_group:
         data["tree"] = prune_empty_groups(data["tree"])
 
-    save_nav(project, data)
-    sync_nav(project, verbose=True)
+    save_manual_nav(project, data)
+    if sync_nav(project, verbose=True) != 0:
+        return 1
     print(f"✅ 节点 {args.id} 已删除")
     return 0
 

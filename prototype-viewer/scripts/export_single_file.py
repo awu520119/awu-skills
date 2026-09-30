@@ -70,7 +70,8 @@ def main() -> int:
         parser.error(f"输出已存在：{output}；确认覆盖请加 --force")
 
     data = load_nav(project)
-    app_html = read(project / "react-app/dist/index.html")
+    app_path = project / "react-app/dist/index.html"
+    app_html = read(app_path) if app_path.is_file() else ""
     pages: dict[str, dict[str, str]] = {}
     descs: dict[str, str] = {}
     redirect_pattern = re.compile(r"location\.replace\(['\"]\.\./react-app/dist/index\.html(#[-\w/]+)?['\"]\)")
@@ -80,6 +81,8 @@ def main() -> int:
         if html_path:
             page_html = read(project / html_path)
             match = redirect_pattern.search(page_html)
+            if match and not app_html:
+                raise FileNotFoundError(f"页面 {node['id']} 依赖 React 示例，请先构建 react-app")
             pages[html_path] = {"reactHash": match.group(1) or ""} if match else {"srcdoc": page_html}
         if node.get("mdPath"):
             descs[node["id"]] = inline_desc_assets(

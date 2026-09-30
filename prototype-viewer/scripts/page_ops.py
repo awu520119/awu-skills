@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Iterable
@@ -32,6 +33,45 @@ def save_nav(project_dir: Path, data: dict) -> None:
     (project_dir / "nav.json").write_text(
         json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
+
+
+def load_manual_nav(project_dir: Path) -> dict:
+    """手动页面的唯一目录源；辅助脚本不能改合并后的 nav.json。"""
+    path = project_dir / "nav.manual.json"
+    if not path.is_file():
+        print(f"❌ 找不到 {path}", file=sys.stderr)
+        sys.exit(1)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        print(f"❌ {path} 解析失败：{error}", file=sys.stderr)
+        sys.exit(1)
+    if not isinstance(data, dict) or not isinstance(data.get("tree"), list):
+        print(f"❌ {path} 必须包含 tree 数组", file=sys.stderr)
+        sys.exit(1)
+    seen: set[str] = set()
+    for node in iter_nodes(data["tree"]):
+        node_id = node.get("id")
+        if not isinstance(node_id, str) or not re.fullmatch(r"[a-z0-9][a-z0-9-]*", node_id) or node_id in seen:
+            print(f"❌ {path} 包含非法或重复 id：{node_id}", file=sys.stderr)
+            sys.exit(1)
+        seen.add(node_id)
+    return data
+
+
+def save_manual_nav(project_dir: Path, data: dict) -> None:
+    (project_dir / "nav.manual.json").write_text(
+        json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+
+
+def manual_file(project_dir: Path, value: str, folder: str, suffix: str) -> Path:
+    """限定手动页面的文件读写范围，避免误改 .published/ 或项目外文件。"""
+    base = (project_dir / folder).resolve()
+    target = (project_dir / value).resolve()
+    if base not in target.parents or target.suffix.lower() != suffix:
+        raise ValueError(f"手动文件必须是 {folder}/ 下的 {suffix} 文件：{value}")
+    return target
 
 
 def find_node(tree, node_id):

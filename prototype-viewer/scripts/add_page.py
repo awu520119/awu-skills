@@ -32,7 +32,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
-from page_ops import find_node, iter_nodes, load_nav, save_nav  # type: ignore
+from page_ops import find_node, iter_nodes, load_manual_nav, load_nav, manual_file, save_manual_nav  # type: ignore
 from sync_nav import sync_nav  # type: ignore
 
 
@@ -100,16 +100,29 @@ def main() -> int:
     args = parser.parse_args()
 
     project = Path(args.project_dir).resolve()
-    data = load_nav(project)
+    data = load_manual_nav(project)
+    combined = load_nav(project)
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", args.id):
         print(f"❌ id=`{args.id}` 不合法：仅允许小写字母/数字/连字符，且以字母或数字开头", file=sys.stderr)
         return 1
-    if any(n["id"] == args.id for n in iter_nodes(data["tree"])):
+    if any(n["id"] == args.id for n in iter_nodes(combined["tree"])) or find_node(data["tree"], args.id):
         print(f"❌ id={args.id} 已存在", file=sys.stderr)
         return 1
 
     html_path = args.html or f"pages/{args.id}.html"
     md_path = args.md or f"desc/{args.id}.md"
+    try:
+        html_file = manual_file(project, html_path, "pages", ".html")
+        md_file = manual_file(project, md_path, "desc", ".md")
+    except ValueError as error:
+        print(f"❌ {error}", file=sys.stderr)
+        return 1
+    html_path = html_file.relative_to(project).as_posix()
+    md_path = md_file.relative_to(project).as_posix()
+    for node in [*iter_nodes(combined["tree"]), *iter_nodes(data["tree"])]:
+        if node.get("htmlPath") == html_path or node.get("mdPath") == md_path:
+            print(f"❌ 文件路径已被节点 {node['id']} 使用", file=sys.stderr)
+            return 1
 
     # 解析 --template，写入节点 templateType，并拿到模板源文件
     template_src, template_type = resolve_template(args.template)
@@ -128,7 +141,10 @@ def main() -> int:
         parent = find_node(data["tree"], args.parent)
         if not parent:
             if not args.create_parent:
-                print(f"❌ 父节点 {args.parent} 不存在（加 --create-parent 可自动创建）", file=sys.stderr)
+                print(f"❌ 手动目录中没有父节点 {args.parent}（加 --create-parent 可自动创建）", file=sys.stderr)
+                return 1
+            if find_node(combined["tree"], args.parent):
+                print(f"❌ 父节点 {args.parent} 属于发布源，不能作为手动分组", file=sys.stderr)
                 return 1
             # 自动创建分组节点
             group = {
@@ -150,10 +166,7 @@ def main() -> int:
             print(f"DRY-RUN: 模板来源 {template_src}（templateType={template_type}）")
         return 0
 
-    save_nav(project, data)
     # 创建空白 html/md 模板（若不存在）。
-    html_file = project / html_path
-    md_file = project / md_path
     html_file.parent.mkdir(parents=True, exist_ok=True)
     md_file.parent.mkdir(parents=True, exist_ok=True)
     if not html_file.exists():
@@ -193,8 +206,10 @@ def main() -> int:
     if not md_file.exists():
         md_file.write_text(f"# {args.title}\n\n请补充此页面的原型说明。\n", encoding="utf-8")
 
+    save_manual_nav(project, data)
     # sync_nav 会自动调用 build_desc 渲染新节点的 desc/<id>.html
-    sync_nav(project, verbose=True)
+    if sync_nav(project, verbose=True) != 0:
+        return 1
     print(f"✅ 新增节点 {args.id} 完成")
     return 0
 
