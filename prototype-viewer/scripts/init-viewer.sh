@@ -16,12 +16,16 @@ if [ -e "$DESTINATION" ]; then
   exit 1
 fi
 
-mkdir -p "$DESTINATION"
-if command -v rsync >/dev/null 2>&1; then
-  rsync -a --exclude .DS_Store --exclude SKILL.md --exclude agents --exclude __pycache__ --exclude node_modules "$SOURCE_DIR/" "$DESTINATION/"
-else
-  (cd "$SOURCE_DIR" && find . \( -path './agents' -o -path './node_modules' -o -path './**/__pycache__' \) -prune -o -type f ! -name SKILL.md ! -name .DS_Store -print | while IFS= read -r file; do mkdir -p "$DESTINATION/$(dirname "$file")"; cp "$file" "$DESTINATION/$file"; done)
-fi
+# Python is already a viewer prerequisite; use one copy path on every platform.
+# Build outputs and previous publication data never become a new viewer's seed data.
+python3 - "$SOURCE_DIR" "$DESTINATION" <<'PY_COPY'
+from pathlib import Path
+import shutil
+import sys
+source, destination = map(Path, sys.argv[1:])
+excluded = {'.DS_Store', 'SKILL.md', 'agents', '__pycache__', 'node_modules', 'dist', 'share', '.published', 'tests'}
+shutil.copytree(source, destination, ignore=lambda _folder, names: set(names) & excluded)
+PY_COPY
 
 echo "初始化完成: $DESTINATION"
 echo "手动内容：pages/、desc/、nav.manual.json"

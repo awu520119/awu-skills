@@ -13,6 +13,7 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
+from offline_html import inline_page_assets
 from page_ops import iter_leaf_nodes, load_nav  # type: ignore
 
 
@@ -50,7 +51,7 @@ def inline_desc_assets(html: str, project: Path) -> str:
         if tag not in html:
             continue
         content = read(project / "assets" / filename)
-        replacement = f"<{kind}>\\n{content}\\n</{kind}>"
+        replacement = f"<{kind}>\n{content}\n</{kind}>"
         html = html.replace(tag, replacement)
     return html
 
@@ -83,7 +84,7 @@ def main() -> int:
             match = redirect_pattern.search(page_html)
             if match and not app_html:
                 raise FileNotFoundError(f"页面 {node['id']} 依赖 React 示例，请先构建 react-app")
-            pages[html_path] = {"reactHash": match.group(1) or ""} if match else {"srcdoc": page_html}
+            pages[html_path] = {"reactHash": match.group(1) or ""} if match else {"srcdoc": inline_page_assets(page_html, project / html_path, project)}
         if node.get("mdPath"):
             descs[node["id"]] = inline_desc_assets(
                 read(project / "desc" / f"{node['id']}.html"), project

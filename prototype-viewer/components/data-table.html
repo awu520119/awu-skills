@@ -1,20 +1,5 @@
-<!--
-  ⚠️ 本文件仅作参考片段，已被 templates/* 取代 ⚠️
-
-  component: data-table.html
-  历史用途: 数据表格片段（snippet）
-  当前状态: 不再使用。components/ 目录里 8 个文件都是「无 <script>、引用了不存在的变量」的
-            snippet，从来没有真在 pages/ 下被使用过。**真正的 el-table / el-form 写法都在
-            templates/pc/{list,form,detail,dashboard}.html 里**。
-
-  如果你想抄一段 el-table 模板：
-    - PC 列表（带筛选/工具栏/分页/左固定列/选择列/15 列）→ templates/pc/list.html
-    - PC 表单（13 类控件 + 校验）→ templates/pc/form.html
-    - PC 详情（descriptions + tabs + 时间线 + 附件）→ templates/pc/detail.html
-    - PC 仪表盘（KPI + 三图表 + Top10）→ templates/pc/dashboard.html
-    - 移动端 4 个 → templates/mobile/*.html
-
-  见 CLAUDE.md §2.3 的 components/ 说明。
+<!-- 参考片段，需要页面提供对应状态与事件；不能直接作为独立页面。
+完整页面请使用本技能内置的 templates/pc/list.html、form.html 或 detail.html。
 -->
 <el-table :data="rows" border stripe>
   <el-table-column type="selection" width="48" />
@@ -26,7 +11,7 @@
     </template>
   </el-table-column>
   <el-table-column prop="createdAt" label="创建时间" width="180" />
-  <el-table-column label="操作" width="220" fixed="right">
+  <el-table-column class-name="row-actions-cell" label="操作" width="220" fixed="right">
     <template #default="{ row }">
       <el-button link type="primary" @click="$emit('view', row)">查看</el-button>
       <el-button link type="primary" @click="$emit('edit', row)">编辑</el-button>

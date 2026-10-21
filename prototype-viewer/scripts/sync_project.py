@@ -18,54 +18,11 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 import build_desc  # type: ignore  # noqa: E402
+from page_ops import read_json, iter_nodes, validate_tree, project_transaction
 
 
 def fail(message: str) -> None:
     raise ValueError(message)
-
-
-def read_json(path: Path) -> dict:
-    try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except FileNotFoundError:
-        fail(f"找不到 {path}")
-    except json.JSONDecodeError as error:
-        fail(f"{path} 不是合法 JSON：{error}")
-    if not isinstance(value, dict):
-        fail(f"{path} 必须是 JSON 对象")
-    return value
-
-
-def iter_nodes(nodes: list[dict]):
-    for node in nodes:
-        yield node
-        children = node.get("children", [])
-        if not isinstance(children, list):
-            fail(f"节点 {node.get('id')} 的 children 必须是数组")
-        yield from iter_nodes(children)
-
-
-def validate_tree(tree: list[dict], source: str, ids: set[str], paths: set[str]) -> None:
-    for node in iter_nodes(tree):
-        node_id = node.get("id")
-        if not isinstance(node_id, str) or not re.fullmatch(r"[a-z0-9][a-z0-9-]*", node_id):
-            fail(f"{source} 包含非法 id：{node_id}")
-        if node_id in ids:
-            fail(f"节点 id 冲突：{node_id}（来源：{source}）")
-        ids.add(node_id)
-        for key in ("htmlPath", "mdPath"):
-            value = node.get(key)
-            if value is None:
-                continue
-            if not isinstance(value, str) or not value or value.startswith("/") or ".." in Path(value).parts:
-                fail(f"节点 {node_id} 的 {key} 非法")
-            if source == "手动目录":
-                expected = "pages/" if key == "htmlPath" else "desc/"
-                if not value.startswith(expected):
-                    fail(f"手动节点 {node_id} 的 {key} 必须位于 {expected}")
-            if value in paths:
-                fail(f"内容路径冲突：{value}（来源：{source}）")
-            paths.add(value)
 
 
 def sort_tree(tree: list[dict]) -> None:
@@ -89,7 +46,7 @@ def sync(project: Path, verbose: bool = False) -> None:
 
     ids: set[str] = set()
     paths: set[str] = set()
-    validate_tree(tree, "手动目录", ids, paths)
+    validate_tree(tree, "手动目录", ids, paths, project=project)
     combined = list(tree)
     published = project / ".published"
     if published.exists():
@@ -101,7 +58,9 @@ def sync(project: Path, verbose: bool = False) -> None:
             fragment_tree = fragment.get("tree", [])
             if not isinstance(fragment_tree, list):
                 fail(f"{fragment_path} 的 tree 必须是数组")
-            validate_tree(fragment_tree, f"发布源 {source_dir.name}", ids, paths)
+            if fragment.get('sourceId') != source_dir.name:
+                fail(f'{fragment_path} 的 sourceId 与目录不一致')
+            validate_tree(fragment_tree, f"发布源 {source_dir.name}", ids, paths, project=project, prefix=source_dir.name)
             combined.extend(fragment_tree)
 
     sort_tree(combined)
@@ -115,17 +74,18 @@ def sync(project: Path, verbose: bool = False) -> None:
         "lastSyncAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "tree": combined,
     }
-    (project / "nav.json").write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    (project / "nav.js").write_text(
-        "// 由 sync_project.py 自动生成；不要手改。\nwindow.NAV_DATA = "
-        + json.dumps(data, ensure_ascii=False, indent=2) + ";\n",
-        encoding="utf-8",
-    )
-    # 说明 HTML 统一放在 desc/<节点 id>.html；不清理手动文件，发布器只清理自己记录的产物。
-    build_desc.build_all(project, clean=False, quiet=not verbose)
-    result = subprocess.run([sys.executable, str(SCRIPT_DIR / "validate.py"), str(project), "--strict"], check=False)
-    if result.returncode != 0:
-        fail("同步后的严格校验未通过")
+    with project_transaction(project):
+        (project / "nav.json").write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        (project / "nav.js").write_text(
+            "// 由 sync_project.py 自动生成；不要手改。\nwindow.NAV_DATA = "
+            + json.dumps(data, ensure_ascii=False, indent=2) + ";\n",
+            encoding="utf-8",
+        )
+        # 说明 HTML 统一放在 desc/<节点 id>.html；不清理手动文件，发布器只清理自己记录的产物。
+        build_desc.build_all(project, clean=False, quiet=not verbose)
+        result = subprocess.run([sys.executable, str(SCRIPT_DIR / "validate.py"), str(project), "--strict"], check=False)
+        if result.returncode != 0:
+            fail("同步后的严格校验未通过")
     if verbose:
         print(f"✅ 已合并 {len(combined)} 个顶级目录节点")
 

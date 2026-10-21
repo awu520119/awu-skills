@@ -1,10 +1,5 @@
-<!--
-  ⚠️ 本文件仅作参考片段，已被 templates/* 取代 ⚠️
-
-  component: side-menu.html
-  历史用途: 侧边菜单片段（snippet）
-  当前状态: 不再使用。scaffold 当前 4 个 PC 模板 + 4 个移动模板均无侧边菜单布局；如需要，
-  直接参考 Element Plus el-menu 官方文档写一段即可。
+<!-- 参考片段，需要页面提供对应状态与事件；不能直接作为独立页面。
+完整页面请使用本技能内置的 templates/pc/list.html、form.html 或 detail.html。
 -->
 <aside class="side-menu">
   <el-menu :default-active="active" :default-openeds="openeds" @select="onSelect">

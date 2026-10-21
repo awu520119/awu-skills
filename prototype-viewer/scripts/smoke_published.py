@@ -19,7 +19,7 @@ def main() -> int:
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
-        print("缺少浏览器校验依赖：请执行 python3 -m pip install playwright && python3 -m playwright install chromium", file=sys.stderr)
+        print("缺少浏览器校验依赖：请执行 python3 -m pip install -r requirements-browser.txt && python3 -m playwright install chromium", file=sys.stderr)
         return 1
 
     pages = [page for group in fragment["tree"] for page in group.get("children", [])]
@@ -41,8 +41,8 @@ def main() -> int:
                     else:
                         page.wait_for_function("document.querySelector('#root')?.textContent?.trim().length > 0", timeout=15000)
                         sidebars = page.locator(".app-sider")
-                        if sidebars.count() and sidebars.first.evaluate("(node) => getComputedStyle(node).display !== 'none'"):
-                            raise RuntimeError(f"{page_id} 仍显示业务侧栏")
+                        if sidebars.count() and sidebars.first.evaluate("(node) => getComputedStyle(node).display === 'none'"):
+                            raise RuntimeError(f"{page_id} 的业务侧栏被隐藏")
                     if errors:
                         raise RuntimeError(f"{page_id} 页面报错：{errors[0]}")
                     print(f"✅ 页面渲染：{page_id}")

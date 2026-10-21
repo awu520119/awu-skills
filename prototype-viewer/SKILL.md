@@ -5,7 +5,13 @@ description: 创建和维护三栏原型查看器，合并手动 HTML/Markdown �
 
 # 原型查看器
 
-左侧目录、中间原型、右侧说明。新建时运行 `bash <skill目录>/scripts/init-viewer.sh <destination>`。业务页视觉遵循 `figma-ant-design-admin` 的后台规范；查看器自带示例不覆盖原型项目的设计稿。
+左侧目录、中间原型、右侧说明。新建时运行 `bash <skill目录>/scripts/init-viewer.sh <destination>`。本技能的目录、模板、示例和本地资源均包含在技能目录内，无需读取其他技能或历史项目；已有业务页沿用其自身设计。手动页直接使用内置模板，资源路径按生成后的 `pages/` 位置解析。
+
+## 环境与初始化
+
+基础工具为 Bash、Python 3；同步说明需要 Python Markdown，首次在查看器根目录运行 `python3 -m pip install -r requirements.txt`。Node.js 与 npm 仅用于构建内置 React 示例；按 `react-app/package.json` 安装依赖并运行 `npm run build`。不依赖全局 npm 包或个人机器上的构建产物。
+
+Mermaid 图的 SVG 转换可选使用 `mmdc`；缺少时保留可读源码，不阻断普通文档。浏览器检查是可选发布流程的要求，普通手动页同步无需浏览器。
 
 ## 内容归属
 
@@ -21,6 +27,8 @@ description: 创建和维护三栏原型查看器，合并手动 HTML/Markdown �
 
 ## 离线分享
 
-同步后运行 `python3 scripts/export_single_file.py . --force`，生成 `share/prototype-viewer.html`。仅引用 React 示例的手动页才需要先构建 `react-app/`；自定义页引用额外本地资源时需先内联资源。
+同步后运行 `python3 scripts/export_single_file.py . --force`，生成 `share/prototype-viewer.html`。仅引用 React 示例的手动页才需要先构建 `react-app/`；导出脚本会自动内联自定义页的本地样式、脚本与图片，并对缺失或外部资源报错。
 
-发布 React 原型前需有 Python Playwright 与 Chromium。首次安装：`python3 -m pip install playwright && python3 -m playwright install chromium`；之后仍只需运行原型项目的发布命令。
+发布 React 原型前在查看器根目录运行 `python3 -m pip install -r requirements-browser.txt` 和 `python3 -m playwright install chromium`；之后只需运行原型项目的发布命令。查看器导航负责评审目录，不替代或隐藏业务页自身的业务侧栏。
+
+维护脚本与扩展新页面时参照[维护约定](references/maintenance.md)，修改后运行其中的回归命令。

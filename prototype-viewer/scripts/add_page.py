@@ -6,19 +6,13 @@
         --parent user --template detail --order 3 \
         [--create-parent]  # 父节点不存在时自动创建空分组
 
---template 支持多种写法：
-    list / form / detail / dashboard       # 向后兼容，默认 templates/pc/*
-    pc/list / pc/form / pc/detail / pc/dashboard
-    mobile/list / mobile/form / mobile/detail / mobile/dashboard
-    mobile-list / mobile-form / mobile-detail / mobile-dashboard  # 别名写法
-
-解析后会把 nav.json 节点的 templateType 写成：
-    list / form / detail / dashboard         ← 对应 templates/pc/<name>.html
-    mobile-list / mobile-form / mobile-detail / mobile-dashboard  ← 对应 templates/mobile/<name>.html
+--template custom 创建空白页；list/form/detail 或 pc/* 使用内置 PC 模板。
+mobile/* 与 mobile-* 别名保留为扩展入口，只有对应模板文件实际存在时可使用。
 """
 from __future__ import annotations
 
 import argparse
+from html import escape
 import re
 import sys
 from pathlib import Path
@@ -33,6 +27,7 @@ if hasattr(sys.stdout, "reconfigure"):
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 from page_ops import find_node, iter_nodes, load_manual_nav, load_nav, manual_file, save_manual_nav  # type: ignore
+from page_ops import project_transaction
 from sync_nav import sync_nav  # type: ignore
 
 
@@ -86,7 +81,7 @@ def main() -> int:
     parser.add_argument("--title", required=True)
     parser.add_argument("--parent", default="", help="父节点 id，留空表示顶层")
     parser.add_argument("--template", default="custom",
-                        help="模板路径：list/form/detail/dashboard（=pc/*），pc/*，mobile/*，mobile-*")
+                        help="custom、list/form/detail、pc/*；已添加模板后可用 mobile/* 或 mobile-*")
     parser.add_argument("--order", type=int, default=999)
     parser.add_argument("--html", default=None)
     parser.add_argument("--md", default=None)
@@ -126,6 +121,9 @@ def main() -> int:
 
     # 解析 --template，写入节点 templateType，并拿到模板源文件
     template_src, template_type = resolve_template(args.template)
+    if args.template != 'custom' and (not template_src or not template_src.is_file()):
+        print(f'❌ 模板不可用：{args.template}；使用已存在的模板或 custom', file=sys.stderr)
+        return 1
     new_node = {
         "id": args.id,
         "title": args.title,
@@ -166,51 +164,56 @@ def main() -> int:
             print(f"DRY-RUN: 模板来源 {template_src}（templateType={template_type}）")
         return 0
 
-    # 创建空白 html/md 模板（若不存在）。
-    html_file.parent.mkdir(parents=True, exist_ok=True)
-    md_file.parent.mkdir(parents=True, exist_ok=True)
-    if not html_file.exists():
-        if template_src and template_src.exists():
-            # 从模板拷贝，替换 {{PAGE_TITLE}} 占位符；其它占位符（{{CONTENT}} / {{TABBAR}} 等）保留由 PM 后续填写
-            content = template_src.read_text(encoding="utf-8")
-            content = content.replace("{{PAGE_TITLE}}", args.title)
-            html_file.write_text(content, encoding="utf-8")
-            print(f"📄 已从模板 {template_src.name} 拷贝 → {html_file}")
-        else:
-            if template_src:
-                print(f"⚠ 模板 {template_src} 不存在，已回退为占位 HTML（请检查 templates/ 是否完整）", file=sys.stderr)
-            # custom / 模板不存在：回退到默认占位 HTML（向后兼容）
-            html_file.write_text(
-                "<!DOCTYPE html>\n<html lang='zh-CN'><head><meta charset='UTF-8'>"
-                f"<title>{args.title}</title>"
-                "<link rel='stylesheet' href='../assets/element-plus.css'>"
-                "<script src='../assets/vue.global.prod.js'></script>"
-                "<script src='../assets/element-plus.full.min.js'></script>"
-                "<script src='../assets/icons-vue.iife.min.js'></script>"
-                "<script src='../assets/viewer-bridge.js'></script>"
-                "<style>body{margin:0;background:#f5f7fa;font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif}.page{padding:16px}"
-                ".card{background:#fff;padding:16px 24px;border-radius:4px;margin:12px 0}</style>"
-                "</head><body><div id='app' class='page'>"
-                f"<h2 style='margin:0 0 12px'>{args.title}</h2>"
-                "<div class='card'>在此编辑原型内容（Element Plus / Vue 3 + viewer 自动注入的 ElMessage / ElMessageBox / gotoNode）。</div>"
-                "</div>\n"
-                "<script>\n"
-                "  const { createApp } = Vue;\n"
-                "  createApp({ setup() {\n"
-                "    const onGreet = () => ElMessage.success('viewer 已自动注入 ElMessage 短 API');\n"
-                "    return { onGreet };\n"
-                "  } }).use(ElementPlus).mount('#app');\n"
-                "</script></body></html>\n",
-                encoding="utf-8",
-            )
-    if not md_file.exists():
-        md_file.write_text(f"# {args.title}\n\n请补充此页面的原型说明。\n", encoding="utf-8")
+    try:
+        with project_transaction(project, manual=True):
+            # 创建空白 html/md 模板（若不存在）。
+            html_file.parent.mkdir(parents=True, exist_ok=True)
+            md_file.parent.mkdir(parents=True, exist_ok=True)
+            if not html_file.exists():
+                if template_src and template_src.exists():
+                    # 从模板拷贝，替换 {{PAGE_TITLE}} 占位符；其它占位符（{{CONTENT}} / {{TABBAR}} 等）保留由 PM 后续填写
+                    content = template_src.read_text(encoding="utf-8")
+                    content = content.replace("{{PAGE_TITLE}}", escape(args.title))
+                    html_file.write_text(content, encoding="utf-8")
+                    print(f"📄 已从模板 {template_src.name} 拷贝 → {html_file}")
+                else:
+                    if template_src:
+                        print(f"⚠ 模板 {template_src} 不存在，已回退为占位 HTML（请检查 templates/ 是否完整）", file=sys.stderr)
+                    # custom / 模板不存在：回退到默认占位 HTML（向后兼容）
+                    html_file.write_text(
+                        "<!DOCTYPE html>\n<html lang='zh-CN'><head><meta charset='UTF-8'>"
+                        f"<title>{escape(args.title)}</title>"
+                        "<link rel='stylesheet' href='../assets/element-plus.css'>"
+                        "<script src='../assets/vue.global.prod.js'></script>"
+                        "<script src='../assets/element-plus.full.min.js'></script>"
+                        "<script src='../assets/icons-vue.iife.min.js'></script>"
+                        "<script src='../assets/viewer-bridge.js'></script>"
+                        "<style>body{margin:0;background:#f5f7fa;font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif}.page{padding:16px}"
+                        ".card{background:#fff;padding:16px 24px;border-radius:4px;margin:12px 0}</style>"
+                        "</head><body><div id='app' class='page'>"
+                        f"<h2 style='margin:0 0 12px'>{escape(args.title)}</h2>"
+                        "<div class='card'>在此编辑原型内容（Element Plus / Vue 3 + viewer 自动注入的 ElMessage / ElMessageBox / gotoNode）。</div>"
+                        "</div>\n"
+                        "<script>\n"
+                        "  const { createApp } = Vue;\n"
+                        "  createApp({ setup() {\n"
+                        "    const onGreet = () => ElMessage.success('viewer 已自动注入 ElMessage 短 API');\n"
+                        "    return { onGreet };\n"
+                        "  } }).use(ElementPlus).mount('#app');\n"
+                        "</script></body></html>\n",
+                        encoding="utf-8",
+                    )
+            if not md_file.exists():
+                md_file.write_text(f"# {args.title}\n\n请补充此页面的原型说明。\n", encoding="utf-8")
 
-    save_manual_nav(project, data)
-    # sync_nav 会自动调用 build_desc 渲染新节点的 desc/<id>.html
-    if sync_nav(project, verbose=True) != 0:
+            save_manual_nav(project, data)
+            # sync_nav 会自动调用 build_desc 渲染新节点的 desc/<id>.html
+            if sync_nav(project, verbose=True) != 0:
+                raise ValueError("操作后的目录同步失败")
+            print(f"✅ 新增节点 {args.id} 完成")
+    except (ValueError, OSError) as error:
+        print(f'❌ 操作已恢复：{error}', file=sys.stderr)
         return 1
-    print(f"✅ 新增节点 {args.id} 完成")
     return 0
 
 

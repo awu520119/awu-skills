@@ -48,7 +48,7 @@ function PromotionBackdrop() {
     { title: '审核状态', dataIndex: 'audit', width: 96, render: (value: string) => <Tag bordered={false}>{value}</Tag> },
     { title: '状态', dataIndex: 'enabled', width: 84, render: (value: boolean) => <Tag color={value ? 'blue' : 'default'}>{value ? '启用' : '禁用'}</Tag> },
     { title: '收款账户', dataIndex: 'account', width: 250, render: (values: string[]) => <div className="account-lines">{values.map((value) => <span key={value}>{value}</span>)}</div> },
-    { title: '操作', width: 120, render: (_, row) => <Space size={4}><Button type="link" size="small">{row.audit === '待审核' ? '审核' : '编辑'}</Button><Button type="link" danger size="small">删除</Button></Space> },
+    { title: '操作', fixed: 'right', width: 128, render: (_, row) => <Space size={16} className="row-actions"><Button type="link" autoInsertSpace={false} size="small">{row.audit === '待审核' ? '审核' : '编辑'}</Button><Button type="link" autoInsertSpace={false} danger size="small">删除</Button></Space> },
   ];
 
   return (
@@ -63,7 +63,7 @@ function PromotionBackdrop() {
           <Tabs activeKey="全部" items={['全部', '待审核', '已通过', '已驳回'].map((label) => ({ key: label, label }))} />
           <Button type="primary">＋ 新增推广方</Button>
         </div>
-        <Table rowKey="id" className="promotion-table" columns={columns} dataSource={promotions} pagination={false} scroll={{ x: 1054 }} />
+        <Table rowKey="id" className="promotion-table" columns={columns} dataSource={promotions} pagination={false} scroll={{ x: columns.reduce((sum, column) => sum + Number(column.width || 0), 0) }} />
       </section>
     </div>
   );
@@ -155,7 +155,7 @@ export default function DrawerFormPage() {
                               />
                             </Form.Item>
                             <Form.Item {...field} label="分成比例(%)" name={[field.name, 'rate']} rules={[{ required: true, message: '请输入分成比例' }]}><InputNumber min={0} max={100} precision={0} addonAfter="%" /></Form.Item>
-                            <div className="rule-action"><Button type="link" danger size="small" onClick={() => remove(field.name)}>删除</Button></div>
+                            <div className="rule-action"><Button type="link" autoInsertSpace={false} danger size="small" onClick={() => remove(field.name)}>删除</Button></div>
                           </div>
                         </div>
                       ))}

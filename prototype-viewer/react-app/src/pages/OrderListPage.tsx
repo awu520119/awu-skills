@@ -57,14 +57,14 @@ export default function OrderListPage() {
     {
       title: '操作', key: 'actions', fixed: 'right', width: 156,
       render: (_, order) => (
-        <Space size={4}>
-          <Button type="link" size="small" onClick={() => gotoViewerNode('admin-detail', () => navigate('/settlement/bill/offline/offline-tm003-current'))}>详情</Button>
+        <Space size={16} className="row-actions">
+          <Button type="link" autoInsertSpace={false} size="small" onClick={() => gotoViewerNode('admin-detail', () => navigate('/settlement/bill/offline/offline-tm003-current'))}>详情</Button>
           {order.status === '待付款' && (
             <Popconfirm title="取消订单" description={`确定取消订单 ${order.orderNo} 吗？`} okText="确定" cancelText="取消" onConfirm={() => {
               setOrders((current) => current.map((item) => item.id === order.id ? { ...item, status: '已取消' } : item));
               message.success(`订单 ${order.orderNo} 已取消`);
             }}>
-              <Button type="link" danger size="small">取消</Button>
+              <Button type="link" autoInsertSpace={false} danger size="small">取消</Button>
             </Popconfirm>
           )}
         </Space>
@@ -93,7 +93,7 @@ export default function OrderListPage() {
           rowKey="id"
           columns={columns}
           dataSource={rows.slice((page - 1) * pageSize, page * pageSize)}
-          scroll={{ x: 1460 }}
+          scroll={{ x: columns.reduce((sum, column) => sum + Number(column.width || 0), 0) }}
           pagination={false}
           locale={{ emptyText: '暂无订单数据' }}
         />

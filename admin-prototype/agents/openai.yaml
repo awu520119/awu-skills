@@ -1,0 +1,4 @@
+interface:
+  display_name: "后台原型"
+  short_description: "按统一规范创建后台原型与离线 HTML"
+  default_prompt: "使用 $admin-prototype 按内置设计规范创建或迭代带黑色业务导航的后台原型，并导出离线 HTML。"

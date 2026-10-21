@@ -1,12 +1,5 @@
-<!--
-  ⚠️ 本文件仅作参考片段，已被 templates/* 取代 ⚠️
-
-  component: top-nav.html
-  历史用途: 顶部导航栏片段（snippet）
-  当前状态: 不再使用。真正的写法见 templates/pc/list.html / templates/pc/form.html /
-            templates/pc/detail.html / templates/pc/dashboard.html 各自的 .toolbar /
-            .page-header / .detail-header。
-  移动端顶部导航：templates/mobile/list.html 的 van-nav-bar。
+<!-- 参考片段，需要页面提供对应状态与事件；不能直接作为独立页面。
+完整页面请使用本技能内置的 templates/pc/list.html、form.html 或 detail.html。
 -->
 <header class="top-nav">
   <el-menu mode="horizontal" :default-active="active" @select="onSelect" background-color="#ffffff" text-color="#303133" active-text-color="#409eff">

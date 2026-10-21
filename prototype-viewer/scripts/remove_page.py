@@ -20,6 +20,7 @@ if hasattr(sys.stdout, "reconfigure"):
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 from page_ops import find_node, load_manual_nav, manual_file, save_manual_nav  # type: ignore
+from page_ops import project_transaction
 from sync_nav import sync_nav  # type: ignore
 
 
@@ -90,19 +91,24 @@ def main() -> int:
             prune_empty_groups(data["tree"], dry_run=True)
         return 0
 
-    remove_node(data["tree"], args.id)
-    for f in files:
-        f.unlink()
-        print(f"  - 删除 {f.relative_to(project)}")
+    try:
+        with project_transaction(project, manual=True):
+            remove_node(data["tree"], args.id)
+            for f in files:
+                f.unlink()
+                print(f"  - 删除 {f.relative_to(project)}")
 
-    # 清理空分组
-    if not args.keep_empty_group:
-        data["tree"] = prune_empty_groups(data["tree"])
+            # 清理空分组
+            if not args.keep_empty_group:
+                data["tree"] = prune_empty_groups(data["tree"])
 
-    save_manual_nav(project, data)
-    if sync_nav(project, verbose=True) != 0:
+            save_manual_nav(project, data)
+            if sync_nav(project, verbose=True) != 0:
+                raise ValueError("操作后的目录同步失败")
+            print(f"✅ 节点 {args.id} 已删除")
+    except (ValueError, OSError) as error:
+        print(f'❌ 操作已恢复：{error}', file=sys.stderr)
         return 1
-    print(f"✅ 节点 {args.id} 已删除")
     return 0
 
 
