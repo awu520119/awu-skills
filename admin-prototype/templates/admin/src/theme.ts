@@ -38,15 +38,22 @@ export const adminTheme: ThemeConfig = {
     },
     Table: {
       headerBg: '#FAFAFA',
-      headerColor: '#696C70',
-      cellPaddingBlock: 12,
+      headerColor: '#8F9499',
+      cellPaddingBlock: 13,
       cellPaddingInline: 12,
+    },
+    Card: {
+      borderRadiusLG: 4,
+      paddingLG: 16,
     },
     Pagination: {
       itemSize: 32,
     },
     Drawer: {
       paddingLG: 24,
+    },
+    Modal: {
+      borderRadiusLG: 4,
     },
   },
 };

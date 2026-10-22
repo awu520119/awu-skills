@@ -1,4 +1,4 @@
-import { PlusOutlined, ReloadOutlined, TagsOutlined } from '@ant-design/icons';
+import { PlusOutlined, ReloadOutlined, SearchOutlined, TagsOutlined } from '@ant-design/icons';
 import { App, Button, Input, Modal, Select, Space, Table, Tag } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { useState } from 'react';
@@ -173,15 +173,17 @@ export default function ThemeListPage() {
     },
   ];
   return (
-    <section className="page-card themes-card">
-      <div className="theme-toolbar">
+    <div className="admin-page themes-page">
+      <section className="white-card filter-panel theme-filter-panel">
         <div className="theme-filters">
           <Input.Search
+            className="query-search-input"
+            prefix={<SearchOutlined />}
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
-            placeholder="搜索主题名称"
-            aria-label="搜索主题名称"
-            enterButton
+            placeholder="查询主题名称"
+            aria-label="查询主题名称"
+            enterButton="查询"
             onSearch={() => {
               setSearch(keyword);
               setPage(1);
@@ -191,7 +193,7 @@ export default function ThemeListPage() {
           />
           <Select
             aria-label="标签筛选"
-            placeholder="标签筛选"
+            placeholder="标签"
             allowClear
             value={filters.tag}
             options={options(tags)}
@@ -238,39 +240,44 @@ export default function ThemeListPage() {
             重置
           </Button>
         </div>
-        <Space className="theme-actions" size={12}>
-          {hasDraft && (
-            <Button type="link" onClick={() => start(undefined, true)}>
-              继续草稿
+      </section>
+      <section className="white-card list-panel themes-card">
+        <div className="list-toolbar">
+          <h2 className="list-title">主题管理</h2>
+          <Space className="theme-actions" size={12}>
+            {hasDraft && (
+              <Button type="link" onClick={() => start(undefined, true)}>
+                继续草稿
+              </Button>
+            )}
+            <Button icon={<TagsOutlined />} onClick={() => setTagOpen(true)}>
+              标签管理
             </Button>
-          )}
-          <Button icon={<TagsOutlined />} onClick={() => setTagOpen(true)}>
-            标签管理
-          </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => start()}>
-            新增主题
-          </Button>
-        </Space>
-      </div>
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={filtered}
-        scroll={{ x: columns.reduce((sum, column) => sum + Number(column.width || 0), 0) }}
-        className="regular-table"
-        pagination={{
-          current: page,
-          pageSize,
-          showSizeChanger: true,
-          pageSizeOptions: [5, 10, 20],
-          showQuickJumper: true,
-          showTotal: (total) => `共 ${total} 条`,
-          onChange: (p, size) => {
-            setPage(p);
-            setPageSize(size);
-          },
-        }}
-      />
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => start()}>
+              新增主题
+            </Button>
+          </Space>
+        </div>
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={filtered}
+          scroll={{ x: columns.reduce((sum, column) => sum + Number(column.width || 0), 0) }}
+          className="regular-table"
+          pagination={{
+            current: page,
+            pageSize,
+            showSizeChanger: true,
+            pageSizeOptions: [5, 10, 20],
+            showQuickJumper: true,
+            showTotal: (total) => `共 ${total} 条`,
+            onChange: (p, size) => {
+              setPage(p);
+              setPageSize(size);
+            },
+          }}
+        />
+      </section>
       <ThemeFormDrawer
         open={open}
         session={session}
@@ -328,6 +335,6 @@ export default function ThemeListPage() {
           </Button>
         </Space.Compact>
       </Modal>
-    </section>
+    </div>
   );
 }

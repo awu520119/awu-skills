@@ -26,15 +26,21 @@ export default function ThemeDetailDrawer({
     >
       {detail && (
         <>
-          <div className="detail-heading">
-            <span>{detail.name}</span>
-            <Tag color={detail.status === '已发布' ? 'success' : 'default'}>{detail.status}</Tag>
-          </div>
           <div className="drawer-section-title detail-section-title">基础信息</div>
           <Descriptions
             className="aligned-descriptions"
             column={2}
             items={[
+              { key: 'name', label: '主题名称', children: detail.name },
+              {
+                key: 'status',
+                label: '主题状态',
+                children: (
+                  <Tag color={detail.status === '已发布' ? 'success' : 'default'}>
+                    {detail.status}
+                  </Tag>
+                ),
+              },
               {
                 key: 'id',
                 label: '主题编号',

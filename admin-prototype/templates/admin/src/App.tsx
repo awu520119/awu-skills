@@ -3,7 +3,6 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   OrderedListOutlined,
-  AppstoreOutlined,
 } from '@ant-design/icons';
 import { Avatar, Button, Layout, Menu, Space, Typography } from 'antd';
 import { useState } from 'react';
@@ -33,26 +32,20 @@ export default function App() {
           <div className="brand-mark">
             <CameraOutlined />
           </div>
-          {!collapsed && <span className="brand-name">形影随拍</span>}
+          {!collapsed && (
+            <div className="brand-text">
+              <span className="brand-name">形影随拍管理后台</span>
+              <span className="brand-subtitle">业务工作台</span>
+            </div>
+          )}
         </div>
         <Menu
           mode="inline"
           theme="dark"
           selectedKeys={[selectedKey]}
-          defaultOpenKeys={collapsed ? [] : ['orders', 'content']}
           items={[
-            {
-              key: 'content',
-              icon: <AppstoreOutlined />,
-              label: '内容管理',
-              children: [{ key: '/themes', label: '主题管理' }],
-            },
-            {
-              key: 'orders',
-              icon: <OrderedListOutlined />,
-              label: '订单管理',
-              children: [{ key: '/orders', label: '订单列表' }],
-            },
+            { key: '/themes', icon: <CameraOutlined />, label: '主题管理' },
+            { key: '/orders', icon: <OrderedListOutlined />, label: '订单管理' },
           ]}
           onClick={({ key }) => navigate(key)}
         />

@@ -1,8 +1,0 @@
-<!-- 参考片段，需要页面提供对应状态与事件；不能直接作为独立页面。
-完整页面请使用本技能内置的 templates/pc/list.html、form.html 或 detail.html。
--->
-<el-breadcrumb separator="/" class="breadcrumb">
-  <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-  <el-breadcrumb-item v-for="(item, i) in items" :key="i">{{ item }}</el-breadcrumb-item>
-</el-breadcrumb>
-<style>.breadcrumb{padding:8px 0;color:#606266;font-size:13px}</style>

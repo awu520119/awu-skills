@@ -1,4 +1,4 @@
-import { CloseOutlined, CopyOutlined, ReloadOutlined } from '@ant-design/icons';
+import { CloseOutlined, CopyOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import {
   App,
   Button,
@@ -146,37 +146,49 @@ export default function OrderListPage() {
     : [];
 
   return (
-    <section className="page-card">
-      <Form<QueryValues>
-        className="query-form"
-        form={form}
-        layout="inline"
-        onValuesChange={(_, values) => setQuery(values)}
-      >
-        <Form.Item name="keyword">
-          <Input allowClear placeholder="订单号或手机号" />
-        </Form.Item>
-        <Form.Item name="status">
-          <Select<OrderStatus>
-            allowClear
-            placeholder="订单状态"
-            options={Object.keys(statusColors).map((value) => ({ value, label: value }))}
-          />
-        </Form.Item>
-        <Form.Item>
-          <Button type="link" icon={<ReloadOutlined />} onClick={resetQuery}>
-            重置
-          </Button>
-        </Form.Item>
-      </Form>
+    <div className="admin-page">
+      <section className="white-card filter-panel">
+        <Form<QueryValues>
+          className="query-form"
+          form={form}
+          layout="inline"
+          onValuesChange={(_, values) => setQuery(values)}
+        >
+          <Form.Item name="keyword">
+            <Input
+              className="query-search-input"
+              allowClear
+              prefix={<SearchOutlined />}
+              placeholder="查询订单号、手机号"
+            />
+          </Form.Item>
+          <Form.Item name="status">
+            <Select<OrderStatus>
+              allowClear
+              placeholder="状态"
+              options={Object.keys(statusColors).map((value) => ({ value, label: value }))}
+            />
+          </Form.Item>
+          <Form.Item>
+            <Button type="link" icon={<ReloadOutlined />} onClick={resetQuery}>
+              重置
+            </Button>
+          </Form.Item>
+        </Form>
+      </section>
+      <section className="white-card list-panel">
+        <div className="list-toolbar">
+          <h2 className="list-title">订单列表</h2>
+        </div>
 
-      <Table<Order>
-        rowKey="id"
-        columns={columns}
-        dataSource={filteredOrders}
-        scroll={{ x: columns.reduce((sum, column) => sum + Number(column.width || 0), 0) }}
-        pagination={{ pageSize: 10, showTotal: (total) => `共 ${total} 条` }}
-      />
+        <Table<Order>
+          rowKey="id"
+          columns={columns}
+          dataSource={filteredOrders}
+          scroll={{ x: columns.reduce((sum, column) => sum + Number(column.width || 0), 0) }}
+          pagination={{ pageSize: 10, showTotal: (total) => `共 ${total} 条` }}
+        />
+      </section>
 
       <Drawer
         className="design-drawer"
@@ -210,6 +222,6 @@ export default function OrderListPage() {
           ]}
         />
       </Drawer>
-    </section>
+    </div>
   );
 }

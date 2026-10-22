@@ -1,33 +1,7 @@
-# 后台 Demo 项目说明
+# 查看器内置 React 示例
 
-## 技术栈
+React + TypeScript + Vite + Ant Design，使用 Hash 路由和本地 Mock。此目录只是查看器默认手动页面的内部示例，与外部发布项目无关。
 
-React + TypeScript + Vite + Ant Design。项目使用 Hash 路由和本地 Mock 数据，可构建为纯静态文件。
-
-## 开发前检查
-
-先阅读 `src/App.tsx`、`src/pages/`、`src/mock/`、`src/theme.ts` 和实际路由。文档可能落后于代码，以代码现状为准。
-
-## 常用命令
-
-```bash
-npm run dev
-npm run check
-npm run build
-npm run preview
-```
-
-## 开发约定
-
-- 优先使用 Ant Design 和 `@ant-design/icons`。
-- 页面放在 `src/pages/`，Mock 数据放在 `src/mock/`。
-- 稳定的设计值放在 `src/theme.ts`，页面特殊样式放在有作用域的页面类下。
-- 默认不连接真实后端，不增加与演示无关的依赖和功能。
-- 有实质进度后更新下方记录。
-
-## 当前进度
-
-- 已提供无业务侧栏的订单列表、“新增推广方”右抽屉和“线下对公结算详情”。
-- 查询、重置、标签筛选、分页、表单校验、提交反馈、取消订单确认与页面返回均可交互。
-- 构建产物由 `prototype-viewer/pages/*.html` 跳转加载，供三栏查看器离线展示。
-- 内置示例使用以下设计值，无需读取外部参考文件：64px 筛选卡、56px 列表工具栏、720px 新增推广方抽屉，以及带蓝色账单摘要区和 9 条订单明细的线下对公结算详情。
+- 先读目标页面及其直接依赖；路由在 `src/App.tsx`，页面在 `src/pages/`，Mock 在 `src/mock/`，公共视觉在 `src/theme.ts` 和 `src/styles.css`。
+- 不连接真实后端或增加演示无关功能。修改后运行 `npm run check`、`npm run build`。
+- 构建命令生成可离线打开的 `dist/index.html`；生成物和 `node_modules/` 不放入技能包。
