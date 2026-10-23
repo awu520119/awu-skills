@@ -5,9 +5,11 @@ description: 创建或迭代 React、Ant Design、本地 Mock 的桌面后台原
 
 # 后台原型
 
-创建新项目时使用内置模板；迭代现有项目时先读目标功能的 `AGENTS.md`、`README.md`、页面及直接依赖，沿用其目录、组件和设计稿。视觉决策参照[设计规范](references/admin-demo.md)。默认是黑色业务导航、浅灰工作区和白色内容卡。
+创建新项目时使用内置模板；迭代现有项目时先读目标功能的 `AGENTS.md`、`README.md`、页面及直接依赖，沿用其目录、组件和设计稿。视觉决策参照[设计规范](references/admin-demo.md)，其中列表筛选查询统一使用紧凑搜索组件规范、列宽按内容密度分配，表单抽屉统一使用一致的字段间距和吸底操作栏规范。默认是黑色业务导航、浅灰工作区和白色内容卡。
 
 ## 创建与交付
+
+初始化模板内置订单列表示例（筛选、可折叠统计、状态页签、分页、订单详情与飞行任务详情），使用独立本地 Mock 和随包媒体资源。
 
 - 新建：`bash <skill目录>/scripts/init-demo.sh <project-name> [--no-install]`。默认输出到当前目录的 `admin-demo-code/`；可用 `ADMIN_PROTOTYPE_ROOT` 指定根目录。依赖由模板 `package-lock.json` 声明，安装后运行 `npm run check`、`npm run build`。
 - 迭代：遵循目标项目的路由、Mock 和文件组织，不重新套模板或连接真实后端。新模板使用 `src/pages/`、`src/mock/`；已有功能目录继续用自己的 `pages/`、`components/`、`mock/`。

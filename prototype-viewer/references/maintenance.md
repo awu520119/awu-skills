@@ -1,5 +1,7 @@
 # 查看器维护
 
+默认订单列表示例来自小蜜蜂项目订单管理页，位于 `react-app/src/features/order-management/`，包含筛选、可折叠统计、状态页签、订单详情和飞行任务详情。独立 Mock 位于 `react-app/src/mock/orders.ts`，本地媒体随功能打包；说明为 `desc/admin-list.md`。初始化后可独立构建，不读取来源项目。
+
 `nav.manual.json`、`pages/` 和 `desc/*.md` 属于手动内容；`.published/<source-id>/` 属于外部发布源。`scripts/sync_project.py` 合并并生成导航与说明，`scripts/page_ops.py` 管校验和失败恢复。说明渲染在 `scripts/build_desc.py`，离线资源内联在 `scripts/offline_html.py` 与 `export_single_file.py`；前端外壳是 `index.html`、`assets/viewer.css`、`assets/viewer.js`。
 
 模板在 `templates/pc/` 和 `templates/description.html`，本地资源在 `assets/`；内置 React 示例源码在 `react-app/`，依赖由其锁文件安装。初始化脚本只复制源码与静态资源，不带入 `node_modules/`、`dist/`、缓存或旧发布结果。修改模板或路径格式时，同步检查页面操作、严格校验与离线导出。

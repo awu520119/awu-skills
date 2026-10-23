@@ -176,21 +176,28 @@ export default function ThemeListPage() {
     <div className="admin-page themes-page">
       <section className="white-card filter-panel theme-filter-panel">
         <div className="theme-filters">
-          <Input.Search
-            className="query-search-input"
-            prefix={<SearchOutlined />}
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="查询主题名称"
-            aria-label="查询主题名称"
-            enterButton="查询"
-            onSearch={() => {
-              setSearch(keyword);
-              setPage(1);
-            }}
-            style={{ width: 224 }}
-            allowClear
-          />
+          <div className="query-search-control">
+            <Input
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              onPressEnter={() => {
+                setSearch(keyword);
+                setPage(1);
+              }}
+              placeholder="查询主题名称"
+              aria-label="查询主题名称"
+              allowClear
+            />
+            <Button
+              className="query-search-button"
+              icon={<SearchOutlined />}
+              aria-label="搜索主题"
+              onClick={() => {
+                setSearch(keyword);
+                setPage(1);
+              }}
+            />
+          </div>
           <Select
             aria-label="标签筛选"
             placeholder="标签"

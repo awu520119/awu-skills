@@ -9,6 +9,8 @@ description: 创建和维护三栏原型查看器，管理手动 HTML/Markdown �
 
 ## 手动内容
 
+默认订单列表示例包含筛选、可折叠统计、状态页签、分页、订单详情与飞行任务详情；源码位于 `react-app/src/features/order-management/`，数据和媒体均随技能包提供。
+
 - 运行 `python3 -m pip install -r requirements.txt` 安装 Markdown 渲染依赖。
 - 编辑 `nav.manual.json`、`pages/<id>.html`、`desc/<id>.md`；需要起页时可使用 `scripts/add_page.py`，改名或删除使用对应脚本，删除前先运行 `--dry-run`。
 - 运行 `python3 scripts/sync_project.py .` 合并目录并生成 `nav.json`、`nav.js`、`desc/<id>.html`。这些是生成物，不手改。
