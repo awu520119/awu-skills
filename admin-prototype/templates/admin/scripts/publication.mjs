@@ -1,10 +1,33 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readFileSync, realpathSync } from 'node:fs';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 export const safeId = /^[a-z][a-z0-9-]*$/;
 const fail = (message) => {
   throw new Error(message);
 };
+
+export function documentPath(root, value) {
+  if (
+    typeof value !== 'string' ||
+    !value.endsWith('.md') ||
+    value.includes('\\') ||
+    value.split('/').some((part) => !part || part === '.' || part === '..') ||
+    isAbsolute(value)
+  )
+    fail('doc 必须是 docs/ 内的 Markdown 相对路径');
+  const base = resolve(root, 'docs');
+  const target = resolve(base, value);
+  if (existsSync(target)) {
+    const realRoot = realpathSync(root);
+    const realBase = realpathSync(base);
+    const baseRel = relative(realRoot, realBase);
+    if (isAbsolute(baseRel) || baseRel === '..' || baseRel.startsWith(`..${sep}`))
+      fail('docs 路径越界');
+    const rel = relative(realBase, realpathSync(target));
+    if (isAbsolute(rel) || rel === '..' || rel.startsWith(`..${sep}`)) fail('doc 路径越界');
+  }
+  return target;
+}
 
 export function readConfig(root, { requireViewer = true } = {}) {
   const configPath = join(root, 'prototype-pages.json');
@@ -35,12 +58,10 @@ export function readConfig(root, { requireViewer = true } = {}) {
     groups.add(group.id);
   }
   const pages = new Set();
-  const docs = new Set();
   for (const page of config.pages) {
     if (!safeId.test(page?.id || '') || pages.has(page.id) || groups.has(page.id))
       fail('pages 中存在非法或重复 id');
-    if (!/^[^/\\]+\.md$/.test(page.doc || '') || docs.has(page.doc))
-      fail(`页面 ${page.id} 的 doc 必须是唯一的 Markdown 文件名`);
+    documentPath(root, page.doc);
     if (!page.title || !groups.has(page.parent) || !Number.isInteger(page.order))
       fail(`页面 ${page.id} 的 parent、title 或 order 无效`);
     if (
@@ -49,10 +70,19 @@ export function readConfig(root, { requireViewer = true } = {}) {
       !page.hash.startsWith('#/')
     )
       fail(`页面 ${page.id} 的 mode 或 hash 无效`);
-    if (page.mode === 'drawer' && !page.hash.startsWith('#/demo/export/'))
-      fail(`抽屉页 ${page.id} 必须使用 #/demo/export/ 路由`);
+    if (
+      page.ready !== undefined &&
+      (!page.ready ||
+        typeof page.ready !== 'object' ||
+        Array.isArray(page.ready) ||
+        typeof page.ready.selector !== 'string' ||
+        !page.ready.selector.trim() ||
+        (page.ready.text !== undefined &&
+          (typeof page.ready.text !== 'string' || !page.ready.text.trim())) ||
+        Object.keys(page.ready).some((key) => !['selector', 'text'].includes(key)))
+    )
+      fail(`页面 ${page.id} 的 ready 必须包含 selector 和可选 text`);
     pages.add(page.id);
-    docs.add(page.doc);
   }
   return config;
 }
@@ -72,6 +102,7 @@ export function fragment(config) {
       order: page.order,
       templateType: page.mode,
       routeHash: page.hash,
+      ...(page.ready ? { ready: page.ready } : {}),
       htmlPath: `.published/${config.sourceId}/pages/${page.id}.html`,
       mdPath: `.published/${config.sourceId}/desc/${page.doc}`,
       children: [],
@@ -80,30 +111,17 @@ export function fragment(config) {
   return { sourceId: config.sourceId, tree: groups };
 }
 
-export function leafIds(fragmentData) {
-  const ids = [];
-  const walk = (nodes) =>
-    nodes.forEach((node) => {
-      if (node.htmlPath) ids.push(node.id);
-      walk(node.children || []);
-    });
-  walk(fragmentData?.tree || []);
-  return ids;
-}
-
-// Old review aliases remain available; all new pages come from the publication manifest.
+// Review filenames use the same stable IDs as the manifest.
 export function reviewTargets(config, review) {
-  const aliases = { 'theme-list': 'themes', 'order-list': 'orders' };
   const targets = config.pages.map((page) => ({
     ...page,
-    alias: aliases[page.id] || page.id,
-    file: `review-${aliases[page.id] || page.id}.html`,
+    file: `review-${page.id}.html`,
   }));
   if (review === 'all') return targets;
-  const target = targets.find((page) => page.id === review || page.alias === review);
+  const target = targets.find((page) => page.id === review);
   if (!target)
     throw new Error(
-      `不支持的评审页：${review}。可用值：all, ${targets.map((page) => page.alias).join(', ')}`,
+      `不支持的评审页：${review}。可用值：all, ${targets.map((page) => page.id).join(', ')}`,
     );
   return [target];
 }

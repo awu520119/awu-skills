@@ -1,1 +1,6 @@
 share/
+.viewer.lock
+__pycache__/
+.venv/
+
+shell/node_modules/

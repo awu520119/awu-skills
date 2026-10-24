@@ -6,11 +6,10 @@
 - ``![alt](path)`` 图片引用 → ``data:image/...;base64,...``（图片相对 md 文件解析）
 
 用法:
-    python build_desc.py <project_dir> [--id <node_id>] [--no-clean] [--quiet]
+    python build_desc.py <project_dir> [--id <node_id>] [--quiet]
 
 产物:
     <project_dir>/desc/<id>.html   每个带 mdPath 的节点对应一份
-    <project_dir>/desc/*.desc.js   旧的 .desc.js 默认会被清理（--no-clean 保留）
 
 依赖:
     python3 -m pip install -r requirements.txt  # 本技能声明的 Python 依赖
@@ -19,8 +18,7 @@
 from __future__ import annotations
 
 import argparse
-import base64
-import mimetypes
+import json
 import re
 import shutil
 import subprocess
@@ -28,6 +26,8 @@ import sys
 import tempfile
 from pathlib import Path
 from typing import Iterable
+from resource_paths import description_roots
+from offline_html import inline_page_assets
 
 try:
     from markdown import markdown as _md_render  # type: ignore[import]
@@ -71,54 +71,8 @@ def render_description_template(**values: str) -> str:
 # Markdown 预处理
 # ---------------------------------------------------------------------------
 
-_IMG_RE = re.compile(r"!\[([^\]]*)\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 # 匹配 ```mermaid ... ```；DOTALL；非贪婪
 _MERMAID_FENCE_RE = re.compile(r"```mermaid\s*\n(.*?)```", re.DOTALL)
-# inline code: `...`；非贪婪；不跨行
-_INLINE_CODE_RE = re.compile(r"`[^`\n]+`")
-
-
-def inline_images(md_text: str, md_file: Path) -> str:
-    """把 ``![alt](path)`` 里的 path 转成 base64 data URI。
-
-    路径解析：以 md 文件所在目录为基准；http(s)/data: 开头的链接原样保留。
-    inline code 中的 ``![..](..)`` 视为示例文本，不做替换。
-    """
-    base_dir = md_file.parent
-
-    def _replace(match: re.Match[str]) -> str:
-        alt = match.group(1)
-        target = match.group(2)
-        if target.startswith(("http://", "https://", "data:", "//")):
-            return match.group(0)
-        raw = match.group(0)
-        try:
-            img_path = (base_dir / target).resolve()
-        except Exception:
-            return raw
-        if not img_path.is_file():
-            # 缺失的图片：保留原引用，避免渲染时出现破图
-            print(f"  ⚠ 图片缺失: {img_path}", file=sys.stderr)
-            return raw
-        mime, _ = mimetypes.guess_type(str(img_path))
-        if mime is None:
-            mime = "application/octet-stream"
-        encoded = base64.b64encode(img_path.read_bytes()).decode("ascii")
-        return f'![{alt}](data:{mime};base64,{encoded})'
-
-    # 先用占位符遮蔽 inline code，跑完 regex 后再恢复，避免示例文本被误匹配
-    placeholders: list[str] = []
-
-    def _stash(m: re.Match[str]) -> str:
-        idx = len(placeholders)
-        placeholders.append(m.group(0))
-        return f"\x00CODE{idx}\x00"
-
-    masked = _INLINE_CODE_RE.sub(_stash, md_text)
-    masked = _IMG_RE.sub(_replace, masked)
-    for idx, original in enumerate(placeholders):
-        masked = masked.replace(f"\x00CODE{idx}\x00", original)
-    return masked
 
 
 def split_mermaid_blocks(md_text: str) -> tuple[str, list[str]]:
@@ -436,13 +390,8 @@ def build_one(
     node: dict,
     *,
     quiet: bool = False,
-    skip_existing: bool = False,
 ) -> Path | None:
-    """渲染单个节点，产物写到 ``<project_dir>/desc/<id>.html``。
-
-    ``skip_existing=True`` 时，如果 ``desc/<id>.html`` 已存在则跳过（保留 scaffold
-    拷贝过来的产物），仅当缺失时才渲染。
-    """
+    """渲染单个节点，产物写到 desc/<id>.html。"""
     md_path = project_dir / node["mdPath"]
     if not md_path.exists():
         if not quiet:
@@ -450,14 +399,10 @@ def build_one(
         return None
 
     out_path = project_dir / "desc" / f"{node['id']}.html"
-    if skip_existing and out_path.exists():
-        if not quiet:
-            print(f"  · 保留已存在 {out_path.relative_to(project_dir)} (skip_existing)")
-        return out_path
-
     md_text = md_path.read_text(encoding="utf-8")
-    md_text = inline_images(md_text, md_path)
+    roots = description_roots(project_dir, md_path)
     html = md_to_html(md_text, node.get("title", node["id"]))
+    html = inline_page_assets(html, md_path, project_dir, allowed_roots=roots)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding="utf-8")
@@ -466,36 +411,16 @@ def build_one(
     return out_path
 
 
-def clean_obsolete(project_dir: Path, keep_ids: set[str], *, quiet: bool = False) -> None:
-    """清理不属于 keep_ids 的陈旧 ``<id>.html`` 与历史遗留 ``<id>.desc.js``。"""
-    desc_dir = project_dir / "desc"
-    if not desc_dir.exists():
-        return
-    for old in desc_dir.glob("*.desc.js"):
-        old.unlink()
-        if not quiet:
-            print(f"  - 清理陈旧 {old.relative_to(project_dir)}")
-    for old in desc_dir.glob("*.html"):
-        node_id = old.stem
-        # 只清理「有对应 .md 却不在 nav」的陈旧渲染产物；用户手工放置的无 .md html 保留
-        if node_id not in keep_ids and (desc_dir / f"{node_id}.md").exists():
-            old.unlink()
-            if not quiet:
-                print(f"  - 清理陈旧 {old.relative_to(project_dir)}")
+from project_lock import locked_project, locked_cli
 
 
+@locked_project
 def build_all(project_dir: Path, *, target_id: str | None = None,
-              clean: bool = True, quiet: bool = False,
-              skip_existing: bool = False) -> list[Path]:
-    """批量渲染。供 sync_nav / sync_desc 等脚本调用。
-
-    ``skip_existing=True`` 时，对 ``desc/<id>.html`` 已存在的节点不重新渲染
-    （保留 scaffold 拷贝过来的产物）。仍会清理不属于 nav 的陈旧 html（除非
-    ``clean=False``）。
-    """
+              quiet: bool = False) -> list[Path]:
+    """批量渲染最新说明，供项目同步和单独渲染使用。"""
     with project_transaction(project_dir):
         nav = load_nav(project_dir)
-        nodes = list(iter_leaf_nodes(nav["tree"]))
+        nodes = [n for n in iter_leaf_nodes(nav["tree"]) if n.get("mdPath")]
         if target_id:
             nodes = [n for n in nodes if n["id"] == target_id]
             if not nodes:
@@ -503,29 +428,33 @@ def build_all(project_dir: Path, *, target_id: str | None = None,
                     print(f"❌ 找不到 id={target_id} 的节点", file=sys.stderr)
                 return []
 
-        kept: set[str] = set()
+        manifest = project_dir / '.generated-desc.json'
+        previous = json.loads(manifest.read_text()) if manifest.exists() else []
+        if not isinstance(previous, list) or any(not isinstance(x, str) or not re.fullmatch(r'desc/[a-z0-9][a-z0-9-]*\.html', x) for x in previous):
+            raise ValueError('生成文件清单无效')
+        kept = set(previous) if target_id else set()
         outs: list[Path] = []
         for n in nodes:
-            out = build_one(project_dir, n, quiet=quiet, skip_existing=skip_existing)
+            relative = f"desc/{n['id']}.html"
+            if (project_dir / relative).exists() and relative not in previous:
+                raise ValueError(f'说明目标已有未登记文件：{relative}；旧项目请先执行 migrate_legacy.py')
+            out = build_one(project_dir, n, quiet=quiet)
             if out:
-                kept.add(n["id"])
+                kept.add(relative)
                 outs.append(out)
 
-        if clean:
-            all_ids = {n["id"] for n in iter_leaf_nodes(nav["tree"])}
-            clean_obsolete(project_dir, all_ids, quiet=quiet)
+        for stale in set(previous) - kept:
+            (project_dir / stale).unlink(missing_ok=True)
+        manifest.write_text(json.dumps(sorted(kept), ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
         return outs
 
 
+@locked_cli
 def main() -> int:
     parser = argparse.ArgumentParser(description="把 desc/*.md 渲染成 desc/*.html")
     parser.add_argument("project_dir")
     parser.add_argument("--id", default=None, help="只渲染指定节点")
-    parser.add_argument("--no-clean", action="store_true",
-                        help="不清理陈旧的 .desc.js / .html")
-    parser.add_argument("--skip-existing", action="store_true",
-                        help="desc/<id>.html 已存在时跳过（保留 scaffold 拷贝过来的产物）")
     parser.add_argument("--quiet", action="store_true")
     args = parser.parse_args()
 
@@ -535,9 +464,7 @@ def main() -> int:
     build_all(
         project_dir,
         target_id=args.id,
-        clean=not args.no_clean,
         quiet=args.quiet,
-        skip_existing=args.skip_existing,
     )
     if not args.quiet:
         print("✅ 完成")

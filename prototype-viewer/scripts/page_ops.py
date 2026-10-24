@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""add_page.py / remove_page.py / rename_page.py / sync_desc.py 共享的工具。"""
+"""add_page.py / remove_page.py / rename_page.py 共享的工具。"""
 from __future__ import annotations
 
 import json
@@ -30,12 +30,6 @@ def load_nav(project_dir: Path) -> dict:
     except json.JSONDecodeError as e:
         print(f"❌ {p} 解析失败：{e}", file=sys.stderr)
         sys.exit(1)
-
-
-def save_nav(project_dir: Path, data: dict) -> None:
-    (project_dir / "nav.json").write_text(
-        json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
 
 
 def load_manual_nav(project_dir: Path) -> dict:
@@ -99,9 +93,9 @@ def iter_nodes(tree) -> Iterable[dict]:
 
 
 def iter_leaf_nodes(tree) -> Iterable[dict]:
-    """只迭代同时拥有 ``htmlPath`` 与 ``mdPath`` 的叶子节点（描述页面）。"""
+    """迭代拥有 htmlPath 的页面；说明可选，页面也可有子节点。"""
     for n in iter_nodes(tree):
-        if n.get("htmlPath") and n.get("mdPath"):
+        if n.get("htmlPath"):
             yield n
 
 
@@ -143,7 +137,7 @@ def validate_tree(tree, source: str, ids=None, paths=None, *, project=None, pref
             expected = f'.published/{prefix}/{folder}/' if prefix else f'{folder}/' if source == '手动目录' else None
             if expected and not value.startswith(expected):
                 raise ValueError(f'节点 {node_id} 的 {key} 必须位于 {expected}')
-            if value in paths:
+            if key == 'htmlPath' and value in paths:
                 raise ValueError(f'内容路径冲突：{value}')
             paths.add(value)
             if project is not None:
@@ -152,15 +146,20 @@ def validate_tree(tree, source: str, ids=None, paths=None, *, project=None, pref
                     raise ValueError(f'节点 {node_id} 的资源不存在或越界：{value}')
 
 
+_transactions = set()
+
 @contextmanager
-def project_transaction(project: Path, *, manual: bool = False):
+def project_transaction(project: Path, *, manual: bool = False, extra_files=()):
     """Restore only files owned by this operation when rendering or validation fails."""
+    project = project.resolve()
+    if project in _transactions:
+        yield
+        return
     def owned():
-        result = {project / 'nav.json', project / 'nav.js'}
+        result = {project / 'nav.json', project / 'nav.js', project / '.generated-desc.json', *extra_files}
         desc = project / 'desc'
         if desc.exists():
             result.update(desc.rglob('*.html'))
-            result.update(desc.rglob('*.desc.js'))
             if manual:
                 result.update(desc.rglob('*.md'))
         if manual:
@@ -176,6 +175,7 @@ def project_transaction(project: Path, *, manual: bool = False):
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(path, target)
         try:
+            _transactions.add(project)
             yield
         except BaseException:
             for path in owned() - original:
@@ -184,3 +184,5 @@ def project_transaction(project: Path, *, manual: bool = False):
                 path.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(backup / path.relative_to(project), path)
             raise
+        finally:
+            _transactions.discard(project)

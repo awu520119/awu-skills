@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import subprocess
 import sys
 from datetime import datetime
@@ -18,7 +17,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 import build_desc  # type: ignore  # noqa: E402
-from page_ops import read_json, iter_nodes, validate_tree, project_transaction
+from page_ops import read_json, validate_tree, project_transaction
 
 
 def fail(message: str) -> None:
@@ -32,14 +31,17 @@ def sort_tree(tree: list[dict]) -> None:
     tree.sort(key=lambda node: (node.get("order", 999), node.get("title", "")))
 
 
+from project_lock import locked_project
+
+
+@locked_project
 def sync(project: Path, verbose: bool = False) -> None:
     marker = project / ".prototype-viewer.json"
     if not marker.exists():
         fail(f"{project} 不是受控原型查看器（缺少 {marker.name}）")
 
     manual_path = project / "nav.manual.json"
-    # 兼容旧查看器：首次同步前以已有 nav.json 作为手动目录。
-    manual = read_json(manual_path if manual_path.exists() else project / "nav.json")
+    manual = read_json(manual_path)
     tree = manual.get("tree", [])
     if not isinstance(tree, list):
         fail("nav.manual.json 的 tree 必须是数组")
@@ -64,11 +66,6 @@ def sync(project: Path, verbose: bool = False) -> None:
             combined.extend(fragment_tree)
 
     sort_tree(combined)
-    for node in iter_nodes(combined):
-        for key in ("htmlPath", "mdPath"):
-            value = node.get(key)
-            if value and not (project / value).is_file():
-                fail(f"节点 {node['id']} 的 {key} 文件不存在：{value}")
     data = {
         "projectName": manual.get("projectName", "原型查看器"),
         "lastSyncAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -82,7 +79,7 @@ def sync(project: Path, verbose: bool = False) -> None:
             encoding="utf-8",
         )
         # 说明 HTML 统一放在 desc/<节点 id>.html；不清理手动文件，发布器只清理自己记录的产物。
-        build_desc.build_all(project, clean=False, quiet=not verbose)
+        build_desc.build_all(project, quiet=not verbose)
         result = subprocess.run([sys.executable, str(SCRIPT_DIR / "validate.py"), str(project), "--strict"], check=False)
         if result.returncode != 0:
             fail("同步后的严格校验未通过")

@@ -17,3 +17,5 @@ const config = JSON.parse(readFileSync(path, 'utf8'));
 config.sourceId = name;
 config.viewer.projectPath = viewer ? relative(project, viewer) || '.' : '';
 writeFileSync(path, JSON.stringify(config, null, 2) + '\n');
+
+writeFileSync(join(project, '.admin-prototype.json'), JSON.stringify({ toolkitVersion: 5 }) + '\n');

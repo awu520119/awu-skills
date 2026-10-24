@@ -1,24 +1,35 @@
 ---
 name: prototype-viewer
-description: 创建和维护三栏原型查看器，管理手动 HTML/Markdown 和外部原型项目发布页，并导出离线单文件。
+description: 创建和维护独立运行的三栏原型查看器，管理手动 HTML/Markdown、接收后台原型发布，并导出离线单文件。
 ---
 
 # 原型查看器
 
-左侧目录、中间原型、右侧说明。运行 `bash <skill目录>/scripts/init-viewer.sh <destination>` 新建项目；模板、脚本和离线静态资源都在本技能内，不读取其他技能或个人机器上的项目。初始化后在目标目录执行以下步骤。
+左侧目录、中间原型、右侧说明。业务原型由 `admin-prototype` 或其他源项目创建并发布；查看器负责展示和内容维护，不另建业务应用。外壳使用预构建的 React 静态资源，日常使用无需 Node、CDN 或源项目。手动内容保留在 `pages/`、`desc/`。
 
-## 手动内容
+## 首次使用
 
-默认订单列表示例包含筛选、可折叠统计、状态页签、分页、订单详情与飞行任务详情；源码位于 `react-app/src/features/order-management/`，数据和媒体均随技能包提供。
+支持 macOS / Linux 的 Bash 环境，Windows 使用 WSL；需要 Python 3.10+。默认创建空查看器：
 
-- 运行 `python3 -m pip install -r requirements.txt` 安装 Markdown 渲染依赖。
-- 编辑 `nav.manual.json`、`pages/<id>.html`、`desc/<id>.md`；需要起页时可使用 `scripts/add_page.py`，改名或删除使用对应脚本，删除前先运行 `--dry-run`。
-- 运行 `python3 scripts/sync_project.py .` 合并目录并生成 `nav.json`、`nav.js`、`desc/<id>.html`。这些是生成物，不手改。
+```bash
+bash <skill目录>/scripts/init-viewer.sh my-viewer
+cd my-viewer
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python scripts/doctor.py
+.venv/bin/python scripts/add_page.py . --id first-page --title 首页
+bash update.sh
+```
 
-## 离线分享与可选发布
+编辑 `pages/first-page.html` 和 `desc/first-page.md` 后运行 `bash update.sh`：一次完成目录合并、说明渲染、严格校验和离线分享更新。脚本自动选择项目 `.venv`，可从任意工作目录调用；完成后刷新已打开的查看器。得到可直接打开的 `share/prototype-viewer.html`。下文 `python3` 均在激活 `.venv` 后执行，或替换为 `.venv/bin/python`。
 
-- 运行 `python3 scripts/export_single_file.py . --force`，得到 `share/prototype-viewer.html`。默认手动示例页引用技能内的 `react-app/`；浏览或导出这些示例页前，在该目录运行 `npm ci && npm run build`。仅使用纯 HTML 页面时无需构建 React 示例。
-- 外部原型项目可按查看器的 `.published/<source-id>/` 格式发布；查看器本身不依赖该项目或其他技能目录。发布项目负责写入和浏览器检查，查看器运行 `sync_project.py` 合并；手动内容与发布内容的 ID、路径冲突会报错。
-- 若使用需要浏览器检查的发布器，先在查看器安装 `requirements-browser.txt` 并运行 `python3 -m playwright install chromium`。查看器目录不会替换业务页自身的导航。
+## 内容维护与发布
 
-维护脚本时参照[维护约定](references/maintenance.md)。
+- 手动源文件为 `nav.manual.json`、`pages/`、`desc/*.md`；页面说明可省略。已有页面直接编辑后运行 `update.sh`；新增文件需先登记 `nav.manual.json`，或用下述新增脚本生成并登记，不自动猜测目录分组。`add_page.py` 只生成最小 HTML 和 Markdown，不附带业务 UI 框架。改名、删除使用对应脚本，先用 `--dry-run` 查看计划。
+- `python3 scripts/sync_project.py .` 合并手动内容与 `.published/<source-id>/`，生成 `nav.json`、`nav.js` 和说明 HTML；生成物不手改；`.generated-desc.json` 记录归属，同步只清理登记过的失效说明 HTML。导出会自动同步。
+- 发布项目负责构建发布包，由 `receive_publication.py` 接收；查看器在同一项目锁内替换 `.published/<source-id>/`、同步和失败回滚。手动更新、增删改与发布共用该锁。节点 ID、HTML 路径冲突会报错，多页面可共用同一 Markdown。
+- 发布校验默认优先使用已安装的 Google Chrome，无需下载 Playwright 浏览器；用 `python3 scripts/doctor.py --browser` 检查。没有 Chrome 时，可设置 `PROTOTYPE_BROWSER_CHANNEL=chromium`，再在虚拟环境执行 `python3 -m playwright install chromium`。
+- 图片限于手动说明的 `desc/`、`assets/` 或当前发布源的 `desc/`；缺图、越界资源与不支持的模块依赖明确报错。分享失败保留旧文件。
+- 手动 HTML 可引入 `assets/viewer-bridge.js`，通过 `gotoNode(id, fallback)` 跳转；`<meta name="device" content="mobile">` 可启用手机预览。改名更新已识别引用，动态引用按报告人工复核。
+
+交付分别说明实际完成的页面打开、业务闭环和目录/原型/说明对应检查；明确未执行项。外壳维护、工具升级见[维护约定](references/maintenance.md)。

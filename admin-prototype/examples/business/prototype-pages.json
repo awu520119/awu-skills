@@ -1,0 +1,38 @@
+{
+  "sourceId": "admin-demo",
+  "viewer": {
+    "projectPath": ""
+  },
+  "groups": [
+    {
+      "id": "content",
+      "title": "内容管理",
+      "order": 0
+    },
+    {
+      "id": "orders",
+      "title": "订单管理",
+      "order": 1
+    }
+  ],
+  "pages": [
+    {
+      "id": "theme-list",
+      "title": "主题管理",
+      "doc": "主题管理说明.md",
+      "hash": "#/themes",
+      "mode": "screen",
+      "parent": "content",
+      "order": 1
+    },
+    {
+      "id": "order-list",
+      "title": "订单列表",
+      "doc": "订单列表PRD.md",
+      "hash": "#/orders",
+      "mode": "screen",
+      "parent": "orders",
+      "order": 1
+    }
+  ]
+}

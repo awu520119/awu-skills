@@ -12,7 +12,6 @@
 - desc/ 下所有 .md 都被 nav.json 引用（无孤儿）
 - 每个 .md 都已渲染出对应的 desc/<id>.html（build_desc.py 产物）
 - nav.js 与 nav.json 内容一致
-- index.html 不再注入旧 desc.js 引用（确认已切换到 iframe 渲染）
 - 必填字段（id/title/order）齐全
 """
 from __future__ import annotations
@@ -30,11 +29,7 @@ if hasattr(sys.stdout, "reconfigure"):
         pass
 
 
-from page_ops import iter_nodes, validate_tree
-
-
-def collect_leaves(nodes):
-    return [node for node in iter_nodes(nodes) if node.get('htmlPath')]
+from page_ops import iter_leaf_nodes, validate_tree
 
 
 def main() -> int:
@@ -67,32 +62,25 @@ def main() -> int:
     except ValueError as error:
         print(f'❌ {error}', file=sys.stderr)
         return 1
-    all_nodes = list(iter_nodes(tree))
 
     # 5. 手动 pages/ 与 nav 一致：发布内容放在 .published/，不纳入此检查
     pages_dir = project / "pages"
-    declared = {(project / n["htmlPath"]).resolve() for n in collect_leaves(tree) if n.get("htmlPath")}
+    declared = {(project / n["htmlPath"]).resolve() for n in iter_leaf_nodes(tree) if n.get("htmlPath")}
     if pages_dir.exists():
-        for html in pages_dir.glob("*.html"):
+        for html in pages_dir.rglob("*.html"):
             if html.resolve() not in declared:
                 warnings.append(f"pages/{html.name} 未在 nav.json 中注册")
 
     # 6. 手动 desc/ .md 与 nav 一致；所有叶子节点都必须有生成说明 HTML
     desc_dir = project / "desc"
-    declared_md = {(project / n["mdPath"]).resolve() for n in collect_leaves(tree) if n.get("mdPath")}
+    declared_md = {(project / n["mdPath"]).resolve() for n in iter_leaf_nodes(tree) if n.get("mdPath")}
     if desc_dir.exists():
-        for md in desc_dir.glob("*.md"):
+        for md in desc_dir.rglob("*.md"):
             if md.resolve() not in declared_md:
                 warnings.append(f"desc/{md.name} 未在 nav.json 中注册")
-    for node in collect_leaves(tree):
+    for node in iter_leaf_nodes(tree):
         if node.get("mdPath") and not (desc_dir / f"{node['id']}.html").exists():
             failures.append(f"节点 {node['id']} 缺少生成说明 desc/{node['id']}.html，请运行 sync_project.py")
-
-    # 7. 旧 desc.js 残留提示（不阻塞）
-    if desc_dir.exists():
-        stale = list(desc_dir.glob("*.desc.js"))
-        if stale:
-            warnings.append(f"desc/ 下存在 {len(stale)} 个旧 desc.js 残留，运行 sync_nav.py 会自动清理")
 
     # 8. nav.js 与 nav.json 一致
     nav_js = project / "nav.js"
@@ -102,18 +90,9 @@ def main() -> int:
         try:
             js_data = json.loads(nav_js.read_text(encoding="utf-8").split("=", 1)[1].rstrip(";\n "))
             if js_data.get("lastSyncAt") != data.get("lastSyncAt") or js_data.get("tree") != tree:
-                warnings.append("nav.js 与 nav.json 不同步，建议运行 sync_nav.py")
+                warnings.append("nav.js 与 nav.json 不同步，建议运行 sync_project.py")
         except Exception as e:  # noqa: BLE001
             warnings.append(f"nav.js 解析失败: {e}")
-
-    # 9. index.html 不再注入旧 desc.js 引用
-    index_html = project / "index.html"
-    if index_html.exists():
-        text = index_html.read_text(encoding="utf-8")
-        if 'data-page-desc="' in text:
-            warnings.append("index.html 仍包含旧 data-page-desc 注入，建议运行 sync_project.py 同步查看器")
-        if 'marked.min.js' in text:
-            warnings.append("index.html 仍引用 marked.min.js，建议运行 sync_project.py 同步查看器")
 
     # 汇总
     if warnings:

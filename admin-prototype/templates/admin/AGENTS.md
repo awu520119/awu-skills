@@ -2,9 +2,12 @@
 
 React + TypeScript + Vite + Ant Design，Hash 路由和本地 Mock；不连接真实后端。
 
-- 先读目标页面、路由和直接依赖。页面放 `src/pages/`，Mock 放 `src/mock/`，复用交互放 `src/components/`；公共设计值在 `src/theme.ts` 和 `src/styles.css`。
-- 列表采用筛选卡与列表卡；查询框使用 280×32px、2px 圆角的紧凑搜索组件，右侧为 40px 主色搜索按钮和白色图标；主操作放列表工具行。只在有真实汇总数据时增加统计卡。
-- 列宽按内容密度分配：短字段 80–120px、名称/标识 140–200px、长文本最多 320–420px 且截断后可查看全文；固定操作列按实际按钮数收紧，单项约 80px、两项约 120px、含更多菜单不超过 160px，并使 `scroll.x` 与列宽总和一致。
-- 表单抽屉正文使用 16/24/24px（上/左右/下）内边距；字段项只保留底部 14px 间距并清零自身 padding，底部操作栏固定吸底，白底、顶部边线并带上方阴影。
-- 页面改动后运行 `npm run format:check`、`npm test`、`npm run check`、`npm run build`。分享运行 `npm run export:html`，输出 `dist/admin-share.html`。
-- 可选查看器发布只读取 `prototype-pages.json`；配置 `viewer.projectPath` 后运行 `npm run publish:viewer`。页面、PRD 与 Hash 路由在该清单和 `docs/` 中同步维护。
+- 迭代仅修改本次需求及必要依赖；下述视觉规范用于新增部分，保持与现有页面协调，无关问题仅在交付说明中指出。
+- 先读目标页面、路由和直接依赖。页面元数据维护 `prototype-pages.json`，组件绑定维护 `src/pages/registry.tsx`；路由、菜单与标题自动生成。页面放 `src/pages/`，Mock 放 `src/mock/`，公共外壳放 `src/layout/`，共享组件放 `src/components/ui/`。
+- 公共视觉数值以 `design/system.json` 为准，通过 `src/design/system.tsx` 转成主题及 CSS 变量。复用现有查询、卡片、表格操作和抽屉；业务特殊样式保留在所属模块。
+- 默认设计沿用初始化时复制的已确认方案。新增公共参数同步维护 `design/system.json`、`design/schema.mjs` 及主题/布局映射；组件特例留在业务模块。
+- `npm run design:check` 校验配置，构建也会自动校验。修改主题或布局后在实际列表、表单及详情中核对受影响的状态。
+- 此模板项目先运行 `npm run format:check`；模板维护测试位于技能仓库 `admin-prototype/tests/`，不属于业务项目。交付离线文件时运行 `npm run export:html`（已含类型检查与构建），输出 `dist/admin-share.html`。
+- 已有项目使用自身等效的类型检查、测试和构建命令，不为了适配本技能改名脚本。
+- 当前任务或持续有效的授权包含发布时，读取 `prototype-pages.json` 并沿用已确认的 `viewer.projectPath`，运行 `npm run publish:viewer`；仅有配置不代表授权。页面、PRD 与 Hash 路由同步维护，多个页面可共用 `docs/` 内同一份 PRD。发布源位于 `.published/<source-id>/`，同步还会更新导航与说明生成物，不改手动源文件。
+- 交付分别说明页面打开、业务闭环和查看器对应检查的实际结果及未执行项。

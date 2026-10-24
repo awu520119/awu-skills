@@ -82,10 +82,16 @@ export function readBuildHtml(projectRoot) {
   return html;
 }
 
-export function pageHtml(html, page) {
+export function pageHtml(html, page, { viewer = false } = {}) {
   const route = JSON.stringify(page.hash).replace(/</g, '\\u003c');
   const boot = `<script>window.__PROTOTYPE_INITIAL_ROUTE__=${route};if(!location.hash)location.hash=window.__PROTOTYPE_INITIAL_ROUTE__;</script>`;
   if (!/<body\b[^>]*>/i.test(html)) throw new Error('构建产物缺少 body，无法注入页面路由');
+  // The viewer supplies navigation; standalone exports retain the business sidebar.
+  if (viewer)
+    html = html.replace(
+      /<\/head>/i,
+      '<style data-viewer-layout>.app-sider{display:none!important}</style></head>',
+    );
   return html
     .replace(/<body\b[^>]*>/i, (tag) => `${tag}${boot}`)
     .replace(/<title>.*?<\/title>/is, `<title>${escapeHtml(page.title)}</title>`);

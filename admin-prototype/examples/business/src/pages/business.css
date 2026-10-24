@@ -1,0 +1,60 @@
+.theme-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+}
+
+.theme-actions {
+  margin-left: auto;
+}
+
+.theme-name.ant-btn {
+  max-width: 100%;
+  height: auto;
+  padding: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  text-align: left;
+}
+
+.theme-name.ant-btn:hover {
+  color: var(--design-primary);
+  background: transparent;
+}
+
+.theme-tag {
+  margin-inline-end: 0;
+  border-radius: 2px;
+}
+
+.theme-form-drawer .ant-tabs-nav {
+  margin-top: -8px;
+}
+
+.theme-steps {
+  margin: 16px 0 28px;
+}
+
+.cover-upload.ant-btn {
+  width: 300px;
+  max-width: 100%;
+  height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--design-primary);
+  border: 1px solid color-mix(in srgb, var(--design-primary) 30%, var(--design-surface));
+  border-radius: 0;
+  background: color-mix(in srgb, var(--design-primary) 5%, var(--design-surface));
+}
+
+.theme-tag {
+  border: 1px solid color-mix(in srgb, var(--design-primary) 30%, var(--design-surface));
+  background: color-mix(in srgb, var(--design-primary) 8%, var(--design-surface));
+}

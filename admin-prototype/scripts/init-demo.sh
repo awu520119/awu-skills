@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 初始化 React + Ant Design 后台 Demo。
-# 用法: init-demo.sh <project-name> [--viewer <viewer-path>] [--no-install]
+# 用法: init-demo.sh <project-name> [--viewer <viewer-path>] [--examples] [--no-install]
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -13,9 +13,10 @@ PROJECT_NAME="${1:-}"
 shift || true
 NO_INSTALL=""
 VIEWER_PATH=""
+EXAMPLES=""
 
 if [ -z "$PROJECT_NAME" ]; then
-  echo "用法: init-demo.sh <project-name(kebab-case)> [--viewer <viewer-path>] [--no-install]"
+  echo "用法: init-demo.sh <project-name(kebab-case)> [--viewer <viewer-path>] [--examples] [--no-install]"
   exit 1
 fi
 
@@ -26,6 +27,7 @@ fi
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
+    --examples) EXAMPLES="business" ;;
     --no-install) NO_INSTALL="--no-install" ;;
     --viewer)
       shift
@@ -58,6 +60,8 @@ fi
 
 command -v node >/dev/null 2>&1 || { echo "请先安装 Node.js（版本见模板 package.json）"; exit 1; }
 
+node "$TEMPLATE_DIR/scripts/doctor.mjs"
+
 mkdir -p "$DEMO_DIR"
 echo "复制模板到 $DESTINATION"
 
@@ -75,22 +79,37 @@ else
   )
 fi
 
+if [ -n "$EXAMPLES" ]; then
+  EXAMPLE_SOURCE="$SKILL_DIR/examples/business"
+  find "$EXAMPLE_SOURCE" -type f ! -name .DS_Store -print | while IFS= read -r file; do
+    relative_path="${file#"$EXAMPLE_SOURCE"/}"
+    target_dir="$DESTINATION/$(dirname "$relative_path")"
+    mkdir -p "$target_dir"
+    cp "$file" "$DESTINATION/$relative_path"
+  done
+  rm "$DESTINATION/src/pages/ExampleListPage.tsx" "$DESTINATION/src/mock/items.ts" "$DESTINATION/docs/示例列表.md"
+fi
+
 PROJECT_ABS="$(cd "$DESTINATION" && pwd -P)"
 node "$DESTINATION/scripts/configure-project.mjs" "$PROJECT_ABS" "$PROJECT_NAME" "${VIEWER_ABS:-}"
 
 if [ "$NO_INSTALL" = "--no-install" ]; then
-  echo "已跳过依赖安装。需要时在 $DESTINATION 执行 npm ci"
+  echo "已跳过依赖安装。需要时在 $DESTINATION 执行 npm ci --include=dev"
 else
   echo "安装依赖: npm ci"
-  (cd "$DESTINATION" && npm ci)
+  if ! (cd "$DESTINATION" && npm ci --include=dev); then
+    echo "安装未完成，源码保留在 $DESTINATION"
+    echo "修复安装环境后，在该目录重试 npm ci --include=dev；无需重新初始化。"
+    exit 1
+  fi
 fi
 
 echo "初始化完成: $DESTINATION"
 echo "下一步:"
 echo "  cd \"$DESTINATION\""
 echo "  npm run dev"
-echo "  npm run check"
-echo "  npm run build"
+echo "  npm run format:check"
+echo "  npm run export:html"
 if [ -n "$VIEWER_PATH" ]; then
   echo "  npm run publish:viewer"
 fi
