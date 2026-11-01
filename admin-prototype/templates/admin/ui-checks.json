@@ -1,0 +1,31 @@
+[
+  {
+    "page": "example-list",
+    "name": "查询、空结果、重置与页容量",
+    "steps": [
+      { "action": "text", "selector": ".ant-pagination-total-text", "value": "共 24 条" },
+      { "action": "fill", "role": "textbox", "name": "按名称查询", "value": "示例项目 24" },
+      { "action": "press", "role": "textbox", "name": "按名称查询", "value": "Enter" },
+      { "action": "count", "selector": ".ant-table-tbody tr[data-row-key]", "value": 1 },
+      {
+        "action": "text",
+        "selector": ".ant-table-tbody",
+        "value": "示例项目 24",
+        "checkpoint": true
+      },
+      { "action": "fill", "role": "textbox", "name": "按名称查询", "value": "不存在的项目" },
+      { "action": "click", "role": "button", "name": "按名称搜索" },
+      { "action": "count", "selector": ".ant-table-tbody tr[data-row-key]", "value": 0 },
+      { "action": "text", "selector": ".ant-empty", "value": "暂无数据", "checkpoint": true },
+      { "action": "click", "role": "button", "name": "重 置" },
+      { "action": "count", "selector": ".ant-table-tbody tr[data-row-key]", "value": 10 },
+      { "action": "click", "selector": ".ant-pagination-item-2" },
+      { "action": "text", "selector": ".ant-table-tbody", "value": "示例项目 11" },
+      { "action": "click", "selector": ".ant-pagination-options .ant-select" },
+      { "action": "visible", "selector": ".ant-select-item-option", "index": 1, "checkpoint": true },
+      { "action": "click", "selector": ".ant-select-item-option", "index": 1 },
+      { "action": "count", "selector": ".ant-table-tbody tr[data-row-key]", "value": 20 },
+      { "action": "text", "selector": ".ant-pagination-item-active", "value": "1" }
+    ]
+  }
+]

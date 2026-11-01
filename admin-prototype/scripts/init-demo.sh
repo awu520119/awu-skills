@@ -110,6 +110,7 @@ echo "  cd \"$DESTINATION\""
 echo "  npm run dev"
 echo "  npm run format:check"
 echo "  npm run export:html"
+echo "交付前按 $SKILL_DIR/references/browser-check.md 验收离线 HTML，维护项目 ui-checks.json。"
 if [ -n "$VIEWER_PATH" ]; then
   echo "  npm run publish:viewer"
 fi

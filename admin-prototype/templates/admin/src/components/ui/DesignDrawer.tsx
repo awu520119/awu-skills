@@ -4,15 +4,30 @@ import { useDesign } from '../../design/system';
 export default function DesignDrawer({
   kind = 'detail',
   className = '',
+  rootClassName = '',
+  styles,
   ...props
-}: DrawerProps & { kind?: 'detail' | 'form' }) {
+}: Omit<DrawerProps, 'size' | 'width' | 'height' | 'placement'> & {
+  kind?: 'detail' | 'form';
+}) {
   const d = useDesign();
   return (
     <Drawer
-      size={kind === 'form' ? d.drawer.formWidth : d.drawer.detailWidth}
-      styles={{ wrapper: { maxWidth: '100vw' } }}
       {...props}
-      className={`design-drawer ${className}`}
+      placement="right"
+      size={kind === 'form' ? d.drawer.formWidth : d.drawer.detailWidth}
+      styles={(info) => {
+        const custom = typeof styles === 'function' ? styles(info) : styles;
+        return {
+          ...custom,
+          wrapper: {
+            ...custom?.wrapper,
+            width: kind === 'form' ? d.drawer.formWidth : d.drawer.detailWidth,
+            maxWidth: '100vw',
+          },
+        };
+      }}
+      rootClassName={`design-drawer design-drawer-${kind} ${className} ${rootClassName}`}
     />
   );
 }

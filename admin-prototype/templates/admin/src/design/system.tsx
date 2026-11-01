@@ -1,17 +1,18 @@
 import { App as AntApp, ConfigProvider } from 'antd';
 import type { ThemeConfig } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
-import { createContext, useContext, useLayoutEffect } from 'react';
+import { createContext, useContext, useLayoutEffect, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
 import defaults from '../../design/system.json';
 export type DesignSystem = typeof defaults;
 export { defaults };
 const DesignContext = createContext<DesignSystem>(defaults);
 export const useDesign = () => useContext(DesignContext);
-export function createTheme(d: DesignSystem): ThemeConfig {
+export function createTheme(d: DesignSystem, reducedMotion = false): ThemeConfig {
   const { colors: c, typography: t, controls: control, navigation: nav } = d;
   return {
     token: {
+      motion: !reducedMotion,
       colorPrimary: c.primary,
       colorInfo: c.primary,
       colorLink: c.primary,
@@ -108,6 +109,14 @@ export function designVariables(d: DesignSystem): Record<string, string> {
     : 'none';
   return result;
 }
+const motionQuery = '(prefers-reduced-motion: reduce)';
+const getReducedMotion = () => window.matchMedia(motionQuery).matches;
+function subscribeReducedMotion(onChange: () => void) {
+  const query = window.matchMedia(motionQuery);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+}
+
 export function DesignProvider({
   design = defaults,
   children,
@@ -115,6 +124,7 @@ export function DesignProvider({
   design?: DesignSystem;
   children: ReactNode;
 }) {
+  const reducedMotion = useSyncExternalStore(subscribeReducedMotion, getReducedMotion, () => false);
   useLayoutEffect(() => {
     const root = document.documentElement;
     for (const [key, value] of Object.entries(designVariables(design)))
@@ -123,7 +133,7 @@ export function DesignProvider({
   }, [design]);
   return (
     <DesignContext.Provider value={design}>
-      <ConfigProvider locale={zhCN} theme={createTheme(design)}>
+      <ConfigProvider locale={zhCN} theme={createTheme(design, reducedMotion)}>
         <AntApp>{children}</AntApp>
       </ConfigProvider>
     </DesignContext.Provider>

@@ -1,0 +1,69 @@
+[
+  {
+    "page": "theme-list",
+    "name": "编辑、保存、重新打开与取消",
+    "steps": [
+      { "action": "click", "role": "button", "name": "更多操作", "index": 0 },
+      { "action": "visible", "role": "menuitem", "name": "编辑", "checkpoint": true },
+      { "action": "click", "role": "menuitem", "name": "编辑" },
+      { "action": "visible", "selector": ".theme-form-drawer.ant-drawer-open", "checkpoint": true },
+      { "action": "fill", "selector": ".theme-form-drawer #name", "value": "验收修改后的主题" },
+      { "action": "click", "role": "button", "name": "下一步" },
+      { "action": "click", "role": "button", "name": "下一步" },
+      { "action": "click", "role": "button", "name": "保 存" },
+      { "action": "hidden", "selector": ".theme-form-drawer.ant-drawer-open" },
+      { "action": "text", "selector": ".ant-table-tbody", "value": "验收修改后的主题" },
+      { "action": "click", "role": "button", "name": "更多操作", "index": 0 },
+      { "action": "click", "role": "menuitem", "name": "编辑" },
+      {
+        "action": "value",
+        "selector": ".theme-form-drawer #name",
+        "value": "验收修改后的主题",
+        "checkpoint": true
+      },
+      { "action": "fill", "selector": ".theme-form-drawer #name", "value": "不应保存的修改" },
+      { "action": "click", "role": "button", "name": "取 消" },
+      { "action": "click", "role": "button", "name": "更多操作", "index": 0 },
+      { "action": "click", "role": "menuitem", "name": "编辑" },
+      { "action": "value", "selector": ".theme-form-drawer #name", "value": "验收修改后的主题" }
+    ]
+  },
+  {
+    "page": "theme-list",
+    "name": "新增必填校验与详情",
+    "steps": [
+      { "action": "click", "role": "button", "name": "plus 新增主题" },
+      { "action": "click", "role": "button", "name": "下一步" },
+      {
+        "action": "text",
+        "selector": ".theme-form-drawer",
+        "value": "请输入主题名称",
+        "checkpoint": true
+      },
+      { "action": "click", "role": "button", "name": "取 消" },
+      { "action": "click", "role": "button", "name": "详情", "index": 0 },
+      {
+        "action": "text",
+        "selector": ".design-drawer.ant-drawer-open",
+        "value": "时光悠悠",
+        "checkpoint": true
+      },
+      { "action": "click", "role": "button", "name": "关闭主题详情" },
+      { "action": "count", "selector": ".design-drawer.ant-drawer-open", "value": 0 }
+    ]
+  },
+  {
+    "page": "order-list",
+    "name": "订单详情打开与返回",
+    "steps": [
+      { "action": "click", "role": "button", "name": "详情", "index": 0 },
+      {
+        "action": "visible",
+        "selector": ".order-detail-drawer.ant-drawer-open",
+        "checkpoint": true
+      },
+      { "action": "press", "selector": ".order-detail-drawer.ant-drawer-open", "value": "Escape" },
+      { "action": "count", "selector": ".design-drawer.ant-drawer-open", "value": 0 }
+    ]
+  }
+]

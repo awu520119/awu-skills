@@ -225,7 +225,7 @@
   justify-content: space-between;
   min-height: 30px;
   padding-right: 6px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--design-divider);
 }
 
 .order-flight-task-row:last-child {
@@ -240,7 +240,7 @@
 .order-detail-section {
   position: relative;
   padding: 24px 0 10px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--design-divider);
 }
 
 .order-detail-section h3 {

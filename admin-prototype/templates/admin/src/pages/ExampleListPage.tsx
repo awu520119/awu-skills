@@ -1,38 +1,36 @@
-import { Button, Input, Space, Table, Tag } from 'antd';
+import { Button, Space, Table, Tag } from 'antd';
 import { useState } from 'react';
 import PageCard from '../components/ui/PageCard';
 import { initialItems } from '../mock/items';
 import { useTableScroll } from '../components/ui/useTableScroll';
+import CompactSearch from '../components/ui/CompactSearch';
+import { useTablePagination } from '../components/ui/useTablePagination';
 
 export default function ExampleListPage() {
   const tableScroll = useTableScroll();
   const [keyword, setKeyword] = useState('');
   const [query, setQuery] = useState('');
-  const [page, setPage] = useState(1);
   const data = initialItems.filter((item) => item.name.includes(query));
+  const { pagination, resetPage } = useTablePagination(data.length);
   const search = () => {
     setQuery(keyword.trim());
-    setPage(1);
+    resetPage();
   };
   return (
     <div className="admin-page" ref={tableScroll.ref}>
       <PageCard>
-        <Space>
-          <Input
-            aria-label="名称"
-            placeholder="输入名称"
+        <Space wrap>
+          <CompactSearch
+            placeholder="按名称查询"
             value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            onPressEnter={search}
+            onChange={setKeyword}
+            onSearch={search}
           />
-          <Button type="primary" onClick={search}>
-            查询
-          </Button>
           <Button
             onClick={() => {
               setKeyword('');
               setQuery('');
-              setPage(1);
+              resetPage();
             }}
           >
             重置
@@ -41,22 +39,23 @@ export default function ExampleListPage() {
       </PageCard>
       <PageCard list>
         <Table
-          scroll={{ y: tableScroll.y }}
+          scroll={{ x: 760, y: tableScroll.y }}
           className="regular-table"
           rowKey="id"
           dataSource={data}
           columns={[
-            { title: '编号', dataIndex: 'id' },
-            { title: '名称', dataIndex: 'name' },
+            { title: '编号', dataIndex: 'id', width: 120 },
+            { title: '名称', dataIndex: 'name', width: 480, ellipsis: true },
             {
               title: '状态',
               dataIndex: 'enabled',
+              width: 160,
               render: (enabled: boolean) => (
                 <Tag color={enabled ? 'success' : 'default'}>{enabled ? '启用' : '停用'}</Tag>
               ),
             },
           ]}
-          pagination={{ current: page, pageSize: 10, onChange: setPage, total: data.length }}
+          pagination={pagination}
         />
       </PageCard>
     </div>

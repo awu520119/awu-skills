@@ -1,7 +1,7 @@
 import { CloseOutlined } from '@ant-design/icons';
 import { App, Button, Form, Input, InputNumber, Select, Space, Steps, Tabs } from 'antd';
 import DesignDrawer from '../ui/DesignDrawer';
-import { useDesign } from '../../design/system';
+import DesignForm, { FormGrid } from '../ui/DesignForm';
 import { useEffect, useState } from 'react';
 import type { EditorSession, ThemeDraft, ThemeFormValues } from '../../mock/themes';
 import { options, routesFor, spots, stepFields, themeTypes, valuesFor } from '../../mock/themes';
@@ -27,7 +27,6 @@ export default function ThemeFormDrawer({
   onSave,
 }: Props) {
   const { message } = App.useApp();
-  const design = useDesign();
   const [form] = Form.useForm<ThemeFormValues>();
   const [step, setStep] = useState(0);
   const [type, setType] = useState('套餐主题');
@@ -139,17 +138,16 @@ export default function ThemeFormDrawer({
         ]}
         className="theme-steps"
       />
-      <Form
+      <DesignForm
         scrollToFirstError
         form={form}
-        layout={design.form.labelPosition === 'horizontal' ? 'horizontal' : 'vertical'}
         initialValues={{ people: '1人' }}
         onValuesChange={(changed) => {
           if ('spot' in changed) form.setFields([{ name: 'route', value: undefined, errors: [] }]);
         }}
       >
         <div style={{ display: step === 0 ? 'block' : 'none' }}>
-          <div className="form-grid">
+          <FormGrid>
             <Form.Item
               name="name"
               label="主题名称"
@@ -193,7 +191,7 @@ export default function ThemeFormDrawer({
             <Form.Item name="tags" label="主题标签">
               <Select mode="multiple" placeholder="请选择主题标签" options={options(tags)} />
             </Form.Item>
-          </div>
+          </FormGrid>
           <Form.Item
             name="description"
             label="主题介绍案"
@@ -224,7 +222,7 @@ export default function ThemeFormDrawer({
           >
             <Input placeholder={type === '套餐主题' ? '例如：基础版' : '例如：单次航拍'} />
           </Form.Item>
-          <div className="form-grid">
+          <FormGrid>
             <Form.Item
               name="price"
               label="现价（元）"
@@ -239,9 +237,9 @@ export default function ThemeFormDrawer({
             >
               <InputNumber min={0.01} precision={2} style={{ width: '100%' }} />
             </Form.Item>
-          </div>
+          </FormGrid>
         </div>
-      </Form>
+      </DesignForm>
     </DesignDrawer>
   );
 }
