@@ -22,7 +22,9 @@ bash <skill目录>/scripts/init-demo.sh <project-name>
 cd admin-demo-code/<project-name>
 ```
 
-默认生成轻量列表；需要完整业务示例时加 `--examples`，跳过安装用 `--no-install`，指定输出根目录用 `ADMIN_PROTOTYPE_ROOT`。依赖安装失败保留源码，在生成目录重试 `npm ci --include=dev`。开发预览用 `npm run dev`。
+默认生成轻量列表；需要完整业务示例时加 `--examples`，跳过安装用 `--no-install`，指定输出根目录用 `ADMIN_PROTOTYPE_ROOT`。依赖安装失败保留源码，在生成目录重试 `npm ci --include=dev`。开发预览用 `npm run dev`。默认主题和品牌名称来自形影随拍设计，面向其他项目时可在 `design/system.json` 中调整。
+
+需要对接已有查看器时，初始化追加 `--viewer <查看器目录>`；也可稍后设置 `prototype-pages.json` 的 `viewer.projectPath`。查看器须使用兼容的 toolkitVersion 5，发布前按查看器说明安装浏览器验证依赖。
 
 ## 验证与交付
 
@@ -34,3 +36,5 @@ cd admin-demo-code/<project-name>
 
 - **发布或独立评审页**：仅在任务需要时读[发布说明](references/maintenance.md#发布与评审)。沿用当前或持续有效的发布授权及目标；仅配置查看器路径不代表授权。业务仍在源项目维护。
 - **修改模板、脚本或升级旧项目**：读[维护约定](references/maintenance.md)。维护测试和生成稳定性评估不属于普通业务迭代的必跑流程。
+
+查看器单文件的重复脚本去重由查看器导出器负责；后台发布继续生成各自完整、可独立运行的页面。用户要求分享文件时，使用目标查看器的导出流程，并实际离线打开抽查中文、页面切换、说明及关键交互；分别说明未验证项。

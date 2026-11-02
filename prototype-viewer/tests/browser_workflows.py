@@ -114,6 +114,28 @@ class ShellBrowserWorkflows(unittest.TestCase):
         self.page.locator('.iframe-wrap:not(.mobile)').wait_for()
         self.assertEqual(self.page.locator('.frame-inner').evaluate('(node)=>node.style.transform'), '')
 
+    def test_shared_module_scripts_keep_exact_content_and_page_attributes(self):
+        with tempfile.TemporaryDirectory(prefix='viewer-shared-') as temp:
+            project = Path(temp) / 'viewer'
+            subprocess.run(['bash', str(SKILL / 'scripts/init-viewer.sh'), str(project)], check=True, capture_output=True)
+            common = "const exact = '$& $` $\\\' 中文'; document.body.dataset.exact = exact;" + '/*' + ('x' * 2000) + '*/'
+            pages = []
+            for order, (key, title) in enumerate([('one', '中文页面一'), ('two', '中文页面二')]):
+                html = f'<!doctype html><html><head><meta charset="utf-8"></head><body><h1>{title}</h1><script type="module">{common}</script></body></html>'
+                (project / f'pages/{key}.html').write_text(html, encoding='utf-8')
+                pages.append({'id': key, 'title': title, 'order': order, 'htmlPath': f'pages/{key}.html'})
+            (project / 'nav.manual.json').write_text(json.dumps({'projectName': '测试', 'tree': pages}, ensure_ascii=False), encoding='utf-8')
+            subprocess.run([sys.executable, str(project / 'scripts/export_single_file.py'), str(project)], check=True, capture_output=True)
+            exported = (project / 'share/prototype-viewer.html').read_text(encoding='utf-8')
+            self.assertEqual(exported.count('x' * 2000), 1)
+            self.page.goto((project / 'share/prototype-viewer.html').as_uri())
+            for title in ['中文页面一', '中文页面二']:
+                self.page.locator('.tree').get_by_role('button', name=title, exact=False).click()
+                frame = self.page.frame_locator('.center iframe')
+                frame.get_by_role('heading', name=title).wait_for()
+                frame.locator('body[data-exact]').wait_for()
+                self.assertEqual(frame.locator('body').get_attribute('data-exact'), "$& $` $' 中文")
+
 
     def test_ready_selector_does_not_skip_hidden_sidebar_check(self):
         with tempfile.TemporaryDirectory() as temp:

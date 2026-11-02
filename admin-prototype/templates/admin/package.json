@@ -8,7 +8,7 @@
     "design:check": "node scripts/design-check.mjs",
     "check": "tsc --noEmit",
     "build": "npm run design:check && tsc --noEmit && vite build",
-    "publish:viewer": "npm run build && node scripts/publish-to-viewer.mjs",
+    "publish:viewer": "npm run export:html && node scripts/publish-to-viewer.mjs",
     "export:html": "npm run build && node scripts/inline-share.mjs",
     "format": "prettier --write src scripts design vite.config.ts",
     "format:check": "prettier --check src scripts design vite.config.ts"

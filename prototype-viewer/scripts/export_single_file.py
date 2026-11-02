@@ -11,6 +11,7 @@ import re
 import sys
 import os
 import tempfile
+from collections import Counter
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -44,6 +45,32 @@ def safe_json(value: object) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
 
 
+def pack_pages(pages: dict[str, dict[str, str]]) -> tuple[dict, list[str]]:
+    """Share only identical large inline script bodies; preserve original HTML exactly."""
+    matches = {}
+    for path, page in pages.items():
+        match = re.search(r'<script\b(?![^>]*\bsrc\s*=)[^>]*>(.*?)</script\s*>', page['srcdoc'], re.I | re.S)
+        if match and len(match.group(1)) >= 1024:
+            matches[path] = match
+    counts = Counter(match.group(1) for match in matches.values())
+    shared: list[str] = []
+    indices: dict[str, int] = {}
+    packed = {}
+    for path, page in pages.items():
+        match = matches.get(path)
+        if not match or counts[match.group(1)] < 2:
+            packed[path] = page
+            continue
+        script = match.group(1)
+        if script not in indices:
+            indices[script] = len(shared)
+            shared.append(script)
+        html = page['srcdoc']
+        packed[path] = {'parts': [html[:match.start(1)], html[match.end(1):]], 'shared': indices[script]}
+        assert packed[path]['parts'][0] + script + packed[path]['parts'][1] == html
+    return packed, shared
+
+
 from project_lock import locked_cli
 
 
@@ -75,11 +102,16 @@ def main() -> int:
         if node.get("mdPath"):
             descs[node["id"]] = read(project / "desc" / f"{node['id']}.html")
 
+    packed_pages, shared_scripts = pack_pages(pages)
     html = read(project / "index.html")
     html = inline_tag(html, "style", "assets/viewer.css", read(project / "assets/viewer.css"))
     html = inline_tag(html, "script", "nav.js", f"window.NAV_DATA = {safe_json(data)};")
     embedded = (
-        "window.PROTOTYPE_EMBEDDED_PAGES = " + safe_json(pages) + ";\n"
+        "window.PROTOTYPE_EMBEDDED_PAGES = (() => { const shared = " + safe_json(shared_scripts) + ";\n"
+        "const pages = " + safe_json(packed_pages) + ";\n"
+        "for (const page of Object.values(pages)) if (page.parts) "
+        "page.srcdoc = page.parts[0] + shared[page.shared] + page.parts[1];\n"
+        "return pages; })();\n"
         "window.PROTOTYPE_EMBEDDED_DESCS = " + safe_json(descs) + ";"
     )
     html = inline_tag(html, "script", "assets/viewer.js", f"{embedded}\n{read(project / 'assets/viewer.js')}")

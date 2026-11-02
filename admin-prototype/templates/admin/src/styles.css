@@ -60,7 +60,7 @@ body,
   gap: 10px;
   margin-bottom: 24px;
   padding-bottom: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 1px solid var(--design-divider);
   color: var(--design-nav-text);
   overflow: hidden;
   white-space: nowrap;
@@ -107,7 +107,7 @@ body,
   height: 52px;
   display: grid;
   place-items: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  border-top: 1px solid var(--design-divider);
 }
 
 .sider-trigger .ant-btn {
@@ -143,11 +143,11 @@ body,
 }
 
 .app-content {
-  margin: 0 var(--design-page-padding) var(--design-page-padding);
+  margin: var(--design-page-padding);
 }
 
 .admin-page {
-  min-height: calc(100vh - var(--design-header-height) - var(--design-page-padding));
+  min-height: calc(100vh - var(--design-header-height) - 2 * var(--design-page-padding));
   display: flex;
   flex-direction: column;
   gap: var(--design-page-gap);
@@ -276,7 +276,7 @@ body,
 }
 
 .design-drawer .ant-drawer-body {
-  padding: 16px var(--design-drawer-padding) var(--design-drawer-padding);
+  padding: var(--design-drawer-padding);
 }
 
 .drawer-section-title {
@@ -410,7 +410,7 @@ body,
 .design-drawer .ant-drawer-title {
   font-size: var(--design-drawer-title-size);
   line-height: 24px;
-  font-weight: 600;
+  font-weight: 700;
 }
 .ant-btn:focus-visible {
   outline: 2px solid var(--design-primary);
@@ -480,7 +480,7 @@ body,
 
 /* Shared list sizing: the table viewport is measured by useTableScroll. */
 html[data-scroll-mode='table'] .admin-page {
-  height: calc(100vh - var(--design-header-height) - var(--design-page-padding));
+  height: calc(100vh - var(--design-header-height) - 2 * var(--design-page-padding));
   min-height: 440px;
 }
 .admin-page > .filter-panel,
@@ -500,4 +500,146 @@ html[data-scroll-mode='table'] .admin-page {
 }
 .query-search-button:hover {
   filter: brightness(1.08);
+}
+
+/* Figma component states; preserve visible keyboard focus and viewport adaptation. */
+.ant-input:focus,
+.ant-input-focused,
+.ant-input-affix-wrapper-focused {
+  background: var(--design-surface);
+}
+.ant-select-focused .ant-select-selector {
+  background: var(--design-surface) !important;
+}
+.ant-pagination .ant-pagination-item-active a {
+  color: var(--design-primary);
+}
+.ant-pagination .ant-pagination-item-active:hover a {
+  color: var(--design-primary);
+}
+.ant-alert-success {
+  background: var(--design-successBg);
+  border-color: var(--design-successBorder);
+}
+.ant-alert-warning {
+  background: var(--design-warningBg);
+  border-color: var(--design-warningBorder);
+}
+.ant-alert-error {
+  background: var(--design-errorBg);
+  border-color: var(--design-errorBorder);
+}
+.ant-alert-info {
+  background: var(--design-primaryLight);
+  border-color: var(--design-primaryBorder);
+}
+.ant-empty-description {
+  color: var(--design-helper);
+}
+.ant-modal .ant-modal-title {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+}
+.ant-popover .ant-popover-inner {
+  border-radius: 2px;
+}
+.design-form.ant-form-horizontal .ant-form-item-label {
+  text-align: right;
+  padding-right: 2px;
+}
+.design-form.ant-form-horizontal .ant-form-item-label > label {
+  min-width: 56px;
+  justify-content: flex-end;
+}
+@media (max-width: 700px) {
+  .app-content {
+    margin: 16px;
+  }
+  html[data-scroll-mode='table'] .admin-page {
+    height: auto;
+    min-height: 0;
+  }
+}
+
+.ant-modal-mask {
+  background: rgba(0, 0, 0, 0.45) !important;
+}
+.ant-modal .ant-modal-content {
+  box-shadow:
+    0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    0 6px 16px rgba(0, 0, 0, 0.08),
+    0 9px 28px 8px rgba(0, 0, 0, 0.05);
+}
+.ant-popover:has(.ant-popconfirm) {
+  min-width: min(300px, calc(100vw - 32px));
+}
+.ant-tabs .ant-tabs-ink-bar {
+  height: 2px;
+}
+
+/* Figma source: navigation, list and overlay details. */
+.account {
+  color: var(--design-muted);
+}
+.app-sider .ant-layout-sider-children {
+  padding: 28px 16px 0;
+}
+.app-sider .brand {
+  height: 84px;
+  flex-basis: 84px;
+  padding: 0;
+  margin-bottom: 24px;
+  border: 0;
+  gap: 12px;
+}
+.design-drawer .ant-drawer-header {
+  height: 56px;
+  padding: 16px 24px;
+  box-shadow: inset 0 -1px 0 #f0f0f0;
+}
+.design-drawer .ant-drawer-footer {
+  min-height: 56px;
+  gap: 12px;
+}
+.design-drawer .ant-drawer-mask {
+  background: rgba(0, 0, 0, 0.4);
+}
+.design-form.ant-form-vertical .ant-form-item-label {
+  padding-bottom: 2px;
+}
+.ant-pagination .ant-pagination-total-text {
+  margin-right: auto;
+  color: var(--design-helper);
+}
+.list-panel .ant-table-pagination {
+  width: 100%;
+  min-height: 64px;
+  padding: 16px 0;
+  margin: 0;
+}
+.ant-pagination .ant-pagination-item {
+  border: 1px solid var(--design-border);
+  background: white;
+}
+.ant-pagination .ant-pagination-item-active {
+  border-color: var(--design-primary);
+}
+.ant-tabs .ant-tabs-tab + .ant-tabs-tab {
+  margin-left: 32px;
+}
+.ant-tabs .ant-tabs-tab {
+  min-height: 52px;
+}
+.ant-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  font-weight: 500;
+}
+.ant-modal-confirm .ant-modal-content {
+  padding: 32px 32px 24px;
+}
+.ant-modal-confirm {
+  max-width: calc(100vw - 32px);
+}
+.ant-badge-count {
+  font-family: DIN, 'Helvetica Neue', sans-serif;
 }

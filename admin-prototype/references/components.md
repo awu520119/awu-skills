@@ -7,7 +7,7 @@
 | 筛选/列表卡 | `src/components/ui/PageCard.tsx` | 只管理容器与视觉，不接管查询或数据 |
 | 表格滚动 | `src/components/ui/useTableScroll.ts` | 按可用高度测量表体，页面滚动模式不设置纵向限高 |
 | 列表分页 | `src/components/ui/useTablePagination.ts` | 传入筛选后总数；默认显示总数及容量切换，容量变化回首页，数据减少时限制有效页；筛选和重置调用 resetPage |
-| 表单/详情抽屉 | `src/components/ui/DesignDrawer.tsx` | kind 选择表单/详情宽度，固定右侧且不超视口；styles 合并保留边界，业务不覆盖 size、placement 或 wrapper 宽度 |
+| 表单/详情抽屉 | `src/components/ui/DesignDrawer.tsx` | kind 选择表单/详情宽度；表单可选 formSize="small"（520px）或默认 medium（配置宽度），固定右侧且不超视口；styles 合并保留边界，业务不覆盖 size、placement 或 wrapper 宽度 |
 | 表单布局 | `src/components/ui/DesignForm.tsx` | DesignForm 读取标签位置及字段间距；FormGrid 读取列数及列间距；长内容放在网格外，业务继续使用 Form.Item |
 | 表格操作 | `src/components/TableActions.tsx` | 业务提供操作及确认信息，组件处理更多菜单和执行 |
 

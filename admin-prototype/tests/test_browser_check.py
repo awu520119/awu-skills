@@ -21,10 +21,10 @@ body { margin: 0; }
 .query-search-control { width: 200px; height: 32px; display: flex; }
 .query-search-control button { width: 40px; flex-shrink: 0; }
 .ant-pagination { position: fixed; bottom: 10px; }
-.ant-drawer-content-wrapper { position: fixed; right: 0; top: 0; width: 720px; max-width: 100vw; }
+.ant-drawer-content-wrapper { position: fixed; right: 0; top: 0; width: 600px; max-width: 100vw; }
 .ant-drawer-body { height: 300px; }
 .ant-drawer-footer { height: 48px; }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; }
+.form-grid { display: grid; grid-template-columns: 1fr; column-gap: 16px; }
 </style></head><body><main class="admin-page">
 <div class="query-search-control"><span>查询</span><button class="query-search-button">搜索</button></div>
 <div class="ant-pagination"><span class="ant-pagination-total-text">共 24 条</span></div>

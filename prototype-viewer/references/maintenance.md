@@ -14,7 +14,7 @@ React 外壳源码为 `shell/viewer.jsx`，使用本地 React/React DOM；`shell
 - `nav.manual.json`、`pages/`、`desc/*.md` 是手动源；`.published/<source-id>/` 是外部发布源。`sync_project.py` 是唯一目录同步入口，`build_desc.py` 可单独按 `--id` 渲染说明。HTML 路径唯一，Markdown 可共享。
 - 页面操作使用 `add_page.py`、`rename_page.py`、`remove_page.py`，共用校验、项目锁、事务恢复与引用更新；嵌套调用复用外层事务；删除计划包含后代文件及空分组清理。共享说明仍被引用时不删除或移动。
 - `package_docs.py` 为发布项目打包 PRD 及图片；`receive_publication.py` 负责发布包接收与回滚，发布方不再直接维护查看器生成物；受控资源解析在 `resource_paths.py`。说明渲染在 `build_desc.py`，离线内联与导出在 `offline_html.py`、`export_single_file.py`。
-- 导出只打包已同步的独立 HTML 与说明，无业务框架专用分支；缺资源或失败时保留旧分享文件。图片使用受控目录内的相对路径。
+- 导出只打包已同步的独立 HTML 与说明，无业务框架专用分支；缺资源或失败时保留旧分享文件。图片使用受控目录内的相对路径。相同的大型内联脚本按内容去重，保留完整标签及属性，运行时用字符串拼接无损还原；禁止用替换字符串插入脚本（`$&` 等会被解释），也要避免外层脚本被 `</script>` 提前截断。无重复或不匹配时保留原页面。
 
 ## 验证与升级
 

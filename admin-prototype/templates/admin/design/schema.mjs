@@ -2,7 +2,7 @@
 const range = (min, max) => ({ range: [min, max] });
 const choices = (...values) => ({ choices: values });
 const schema = {
-  version: { value: 2 },
+  version: { value: 3 },
   name: 'text',
   colors: Object.fromEntries(
     [
@@ -17,6 +17,16 @@ const schema = {
       'divider',
       'page',
       'surface',
+      'helper',
+      'input',
+      'primaryLight',
+      'primaryBorder',
+      'successBg',
+      'successBorder',
+      'warningBg',
+      'warningBorder',
+      'errorBg',
+      'errorBorder',
     ].map((key) => [key, 'color']),
   ),
   typography: {

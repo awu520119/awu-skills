@@ -22,6 +22,7 @@ export function createTheme(d: DesignSystem, reducedMotion = false): ThemeConfig
       colorText: c.text,
       colorTextSecondary: c.muted,
       colorTextPlaceholder: c.placeholder,
+      colorTextTertiary: c.helper,
       colorBorder: c.border,
       colorSplit: c.divider,
       colorBgLayout: c.page,
@@ -46,17 +47,24 @@ export function createTheme(d: DesignSystem, reducedMotion = false): ThemeConfig
         darkItemSelectedColor: nav.darkText,
         itemHeight: nav.itemHeight,
         itemBorderRadius: control.radius,
+        itemSelectedBg: c.primaryLight,
+        itemSelectedColor: c.primary,
       },
       Table: {
         headerBg: d.table.headerBackground,
         headerColor: d.table.headerText,
         cellPaddingBlock: d.table.paddingBlock,
         cellPaddingInline: d.table.paddingInline,
+        rowHoverBg: c.page,
+        rowSelectedBg: c.primaryLight,
       },
       Card: { borderRadiusLG: control.cardRadius, paddingLG: d.layout.cardPadding },
-      Pagination: { itemSize: control.height },
       Drawer: { paddingLG: d.drawer.padding },
-      Modal: { borderRadiusLG: control.cardRadius },
+      Modal: { borderRadiusLG: 4 },
+      Input: { colorBgContainer: c.input },
+      Select: { colorBgContainer: c.input },
+      Pagination: { itemSize: control.height, itemActiveBg: c.surface },
+      Tabs: { horizontalItemPadding: '12px 0' },
     },
   };
 }
@@ -88,7 +96,9 @@ export function designVariables(d: DesignSystem): Record<string, string> {
   px('control-height', d.controls.height);
   px('control-radius', d.controls.radius);
   px('card-radius', d.controls.cardRadius);
-  result['--design-card-shadow'] = d.controls.cardShadow ? '0 3px 16px rgba(24,36,56,.08)' : 'none';
+  result['--design-card-shadow'] = d.controls.cardShadow
+    ? '0 2px 4px -4px rgba(0,0,0,.05), 0 4px 14px rgba(0,0,0,.08)'
+    : 'none';
   px('query-width', d.controls.queryWidth);
   px('query-button-width', d.controls.queryButtonWidth);
   px('table-padding-block', d.table.paddingBlock);
@@ -102,10 +112,10 @@ export function designVariables(d: DesignSystem): Record<string, string> {
   px('drawer-padding', d.drawer.padding);
   px('drawer-header-height', d.drawer.headerHeight);
   result['--design-drawer-header-background'] = d.drawer.headerTint
-    ? 'color-mix(in srgb, var(--design-primary) 10%, var(--design-surface))'
+    ? 'linear-gradient(0deg, #FFFFFF 0%, #D8E6FF 100%)'
     : d.colors.surface;
   result['--design-footer-shadow'] = d.drawer.footerShadow
-    ? '0 -4px 12px rgba(24,36,56,.08)'
+    ? '0 -2px 16px rgba(0,0,0,.06), inset 0 1px 0 #F0F0F0'
     : 'none';
   return result;
 }

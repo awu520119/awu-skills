@@ -1,43 +1,53 @@
 {
-  "version": 2,
-  "name": "经典后台",
+  "version": 3,
+  "name": "形影随拍 Figma",
   "colors": {
-    "primary": "#4188FF",
+    "primary": "#2776FF",
     "success": "#52C41A",
     "warning": "#FAAD14",
     "error": "#FF4D4F",
-    "text": "#1E1E1E",
+    "text": "#303338",
     "muted": "#696C70",
-    "placeholder": "#BFBFBF",
-    "border": "#D9D9D9",
-    "divider": "#F0F0F0",
-    "page": "#F5F5F5",
-    "surface": "#FFFFFF"
+    "placeholder": "#B3B8BF",
+    "border": "#D7DAE0",
+    "divider": "#E9EBF0",
+    "page": "#F2F4F7",
+    "surface": "#FFFFFF",
+    "helper": "#8F9499",
+    "input": "#FFFFFF",
+    "primaryLight": "#E6ECFF",
+    "primaryBorder": "#91D5FF",
+    "successBg": "#F6FFED",
+    "successBorder": "#B7EB8F",
+    "warningBg": "#FFFBE6",
+    "warningBorder": "#FFE58F",
+    "errorBg": "#FFF1F0",
+    "errorBorder": "#FF7875"
   },
   "typography": {
-    "family": "'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif",
+    "family": "'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif",
     "size": 14,
     "lineHeight": 22,
     "titleSize": 18,
     "titleWeight": 500,
-    "helperSize": 12,
+    "helperSize": 14,
     "drawerTitleSize": 16
   },
   "layout": {
-    "pagePadding": 16,
-    "pageGap": 8,
-    "cardPadding": 12,
+    "pagePadding": 24,
+    "pageGap": 16,
+    "cardPadding": 24,
     "scrollMode": "table"
   },
   "navigation": {
     "mode": "dark",
-    "width": 200,
+    "width": 220,
     "collapsedWidth": 80,
     "itemHeight": 40,
     "showBrand": true,
     "brand": "形影随拍管理后台",
     "subtitle": "租户 ID",
-    "darkBackground": "#101318",
+    "darkBackground": "#000000",
     "darkSubmenu": "#171C24",
     "darkItemText": "#D9DEE7",
     "darkText": "#FFFFFF",
@@ -45,37 +55,37 @@
   },
   "header": {
     "visible": true,
-    "height": 64,
-    "background": "#F5F5F5",
+    "height": 58,
+    "background": "#FFFFFF",
     "showAccount": true,
-    "border": false
+    "border": true
   },
   "controls": {
     "height": 32,
     "radius": 2,
-    "cardRadius": 4,
+    "cardRadius": 8,
     "cardShadow": false,
     "queryWidth": 200,
     "queryButtonWidth": 40
   },
   "table": {
-    "paddingBlock": 16,
+    "paddingBlock": 13,
     "paddingInline": 12,
     "headerBackground": "#FAFAFA",
-    "headerText": "#696C70",
+    "headerText": "#8F9499",
     "paginationGap": 16
   },
   "form": {
-    "itemGap": 8,
+    "itemGap": 16,
     "columnGap": 16,
-    "columns": 2,
+    "columns": 1,
     "labelPosition": "vertical"
   },
   "drawer": {
-    "formWidth": 720,
+    "formWidth": 600,
     "detailWidth": 800,
     "padding": 24,
-    "headerHeight": 48,
+    "headerHeight": 56,
     "headerTint": true,
     "footerShadow": true
   }

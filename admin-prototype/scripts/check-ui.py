@@ -44,7 +44,8 @@ GEOMETRY = r"""(design) => {
     if (!wrapper) { failures.push('抽屉缺少内容容器'); continue; }
     const r = wrapper.getBoundingClientRect();
     const kind = el.classList.contains('design-drawer-form') ? 'formWidth' : 'detailWidth';
-    check(near(r.width, Math.min(design.drawer[kind], innerWidth)), '抽屉宽度不符合配置');
+    const expectedWidth = el.classList.contains('design-drawer-form-small') ? 520 : design.drawer[kind];
+    check(near(r.width, Math.min(expectedWidth, innerWidth)), '抽屉宽度不符合配置');
     check(r.left >= -2 && r.right <= innerWidth + 2, '抽屉超出视口');
     const footer = el.querySelector('.ant-drawer-footer');
     const body = el.querySelector('.ant-drawer-body');
