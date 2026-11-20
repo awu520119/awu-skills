@@ -30,7 +30,7 @@ bash update.sh
 - 发布项目负责构建发布包，由 `receive_publication.py` 接收；查看器在同一项目锁内替换 `.published/<source-id>/`、同步和失败回滚。手动更新、增删改与发布共用该锁。节点 ID、HTML 路径冲突会报错，多页面可共用同一 Markdown。
 - 接收后台项目发布前，在查看器虚拟环境执行 `.venv/bin/python -m pip install -r requirements-browser.txt`。发布校验默认优先使用已安装的 Google Chrome，无需下载 Playwright 浏览器；用 `python3 scripts/doctor.py --browser` 检查。没有 Chrome 时，可设置 `PROTOTYPE_BROWSER_CHANNEL=chromium`，再在虚拟环境执行 `python3 -m playwright install chromium`。
 - 图片限于手动说明的 `desc/`、`assets/` 或当前发布源的 `desc/`；缺图、越界资源与不支持的模块依赖明确报错。分享失败保留旧文件。
-- 离线导出对多个页面中完全一致的大型内联脚本自动去重，在运行时无损还原页面；不一致或不适合去重的页面保持原样。交付时用浏览器实际打开 `share/prototype-viewer.html`，抽查中文、页面切换、说明和关键交互；未执行的检查需说明。
+- 离线导出对多个页面中完全一致的大型内联脚本和样式自动去重：扫描每页全部内联块，不因前置的小型路由脚本漏掉后续应用包；导出时逐页断言还原后的 `srcdoc` 与原内容完全一致，并输出共享块数和节省体积。不一致、过小或不适合去重的块保持原样。交付时用浏览器实际打开 `share/prototype-viewer.html`，抽查中文、页面切换、说明和关键交互；未执行的检查需说明。
 - 手动 HTML 可引入 `assets/viewer-bridge.js`，通过 `gotoNode(id, fallback)` 跳转；`<meta name="device" content="mobile">` 可启用手机预览。改名更新已识别引用，动态引用按报告人工复核。
 
 交付分别说明实际完成的页面打开、业务闭环和目录/原型/说明对应检查；明确未执行项。外壳维护、工具升级见[维护约定](references/maintenance.md)。
